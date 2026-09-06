@@ -183,8 +183,11 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
                   return (
                     <SidebarMenuItem key={item.id}>
                       <SidebarMenuButton
-                        isActive={view === item.id}
-                        onClick={() => setView(item.id)}
+                        isActive={!patientOpen && view === item.id}
+                        onClick={() => {
+                          setPatientOpen(null);
+                          setView(item.id);
+                        }}
                         className="h-11 rounded-xl px-3"
                       >
                         <Icon />
@@ -224,9 +227,21 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
         <header className="sticky top-0 z-20 flex h-[76px] items-center justify-between border-b border-border bg-white/85 px-4 backdrop-blur-xl sm:px-7">
           <div className="flex items-center gap-3">
             <SidebarTrigger className="md:hidden" />
+            {patientOpen && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPatientOpen(null)}
+                className="mr-1 h-9 rounded-xl px-3 font-bold text-xs hover:bg-slate-100"
+              >
+                <ArrowLeft className="mr-1.5 size-3.5" /> Volver
+              </Button>
+            )}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.13em] text-muted-foreground">Panel profesional</p>
-              <h1 className="text-xl font-black tracking-tight">{patientOpen ? 'Expediente del paciente' : title}</h1>
+              <p className="text-xs font-semibold uppercase tracking-[0.13em] text-muted-foreground">
+                {patientOpen ? 'Expediente del paciente' : 'Panel profesional'}
+              </p>
+              <h1 className="text-xl font-black tracking-tight">{patientOpen ? patientOpen.name : title}</h1>
             </div>
           </div>
           <Button onClick={() => setNewPatientOpen(true)} className={cn('h-11 rounded-xl px-4 font-bold', patientOpen && 'hidden')}>
@@ -620,24 +635,49 @@ function TodayView({
           </CardContent>
         </Card>
 
-        <Card className="rounded-3xl border-0 bg-primary text-primary-foreground shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-xl font-extrabold">Próxima atención</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-4xl font-black">10:30</p>
-            <p className="mt-2 text-lg font-bold">Luis Vargas</p>
-            <Badge className="mt-3 rounded-full bg-cyan-300 text-slate-950 hover:bg-cyan-300">Ya llegó</Badge>
-            <div className="mt-8 rounded-2xl bg-white/10 p-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-white/65">Plan actual</span>
-                <strong>5 de 10</strong>
-              </div>
-              <Progress value={50} className="mt-3 bg-white/15" />
-            </div>
-            <Button className="mt-4 h-11 w-full rounded-xl bg-white text-primary hover:bg-white/90">Abrir ficha <ChevronRight /></Button>
-          </CardContent>
-        </Card>
+        {(() => {
+          const nextItem = data.schedule.find((s) => s.status === 'checked_in' || s.status === 'in_session' || s.status === 'scheduled') ?? data.schedule[0];
+          return (
+            <Card className="rounded-3xl border-0 bg-primary text-primary-foreground shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-xl font-extrabold">Próxima atención</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-4xl font-black">{nextItem?.time ?? '--:--'}</p>
+                <p className="mt-2 text-lg font-bold">{nextItem?.name ?? 'Sin citas registradas'}</p>
+                {nextItem && (
+                  <Badge className="mt-3 rounded-full bg-cyan-300 text-slate-950 hover:bg-cyan-300">
+                    {statusLabels[nextItem.status]?.label ?? 'Programada'}
+                  </Badge>
+                )}
+                <div className="mt-8 rounded-2xl bg-white/10 p-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/65">Plan actual</span>
+                    <strong>{nextItem ? `${nextItem.used} de ${nextItem.total}` : '-'}</strong>
+                  </div>
+                  <Progress value={nextItem?.total ? (nextItem.used / nextItem.total) * 100 : 0} className="mt-3 bg-white/15" />
+                </div>
+                <Button
+                  onClick={() => {
+                    if (nextItem) {
+                      onPatient({
+                        id: nextItem.patientId,
+                        name: nextItem.name,
+                        phone: null,
+                        used: nextItem.used,
+                        total: nextItem.total,
+                      });
+                    }
+                  }}
+                  disabled={!nextItem}
+                  className="mt-4 h-11 w-full rounded-xl bg-white text-primary hover:bg-white/90 font-bold"
+                >
+                  Abrir ficha <ChevronRight className="ml-1 size-4" />
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })()}
       </div>
     </div>
   );
@@ -774,52 +814,78 @@ async function buildPatientCard(name: string, qrValue: string) {
   const context = canvas.getContext('2d');
   if (!context) throw new Error('No se pudo crear la tarjeta.');
 
-  context.fillStyle = '#e8fbff';
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = '#071b2e';
+  // Modern background gradient
+  const gradient = context.createLinearGradient(0, 0, 1080, 680);
+  gradient.addColorStop(0, '#0a233a');
+  gradient.addColorStop(1, '#061320');
+  context.fillStyle = gradient;
   context.beginPath();
-  context.roundRect(34, 34, 1012, 612, 42);
+  context.roundRect(0, 0, 1080, 680, 48);
   context.fill();
-  context.fillStyle = '#67e8f9';
-  context.fillRect(34, 34, 18, 612);
 
-  context.fillStyle = '#67e8f9';
-  context.font = '700 28px Arial';
-  context.fillText('QUIROPRÁCTICA', 104, 130);
+  // Cyan vertical accent bar on the left
+  context.fillStyle = '#06b6d4';
+  context.beginPath();
+  context.roundRect(0, 0, 24, 680, [48, 0, 0, 48]);
+  context.fill();
+
+  // Decorative subtle circle watermark in background
+  context.save();
+  context.strokeStyle = 'rgba(6, 182, 212, 0.08)';
+  context.lineWidth = 140;
+  context.beginPath();
+  context.arc(950, 550, 260, 0, Math.PI * 2);
+  context.stroke();
+  context.restore();
+
+  // Branding
+  context.fillStyle = '#22d3ee';
+  context.font = '700 28px system-ui, -apple-system, sans-serif';
+  context.fillText('QUIROPRÁCTICA', 75, 120);
+
   context.fillStyle = '#ffffff';
-  context.font = '900 48px Arial';
-  context.fillText('LEÓN UNIVERSAL', 104, 188);
+  context.font = '900 48px system-ui, -apple-system, sans-serif';
+  context.fillText('LEÓN UNIVERSAL', 75, 178);
+
+  // Patient info section
+  context.fillStyle = '#94a3b8';
+  context.font = '700 22px system-ui, -apple-system, sans-serif';
+  context.fillText('PACIENTE', 75, 305);
+
+  context.fillStyle = '#ffffff';
+  context.font = '800 42px system-ui, -apple-system, sans-serif';
+  const shortName = name.length > 25 ? `${name.slice(0, 24)}…` : name;
+  context.fillText(shortName, 75, 362);
 
   context.fillStyle = '#94a3b8';
-  context.font = '700 23px Arial';
-  context.fillText('PACIENTE', 104, 315);
-  context.fillStyle = '#ffffff';
-  context.font = '900 43px Arial';
-  const shortName = name.length > 24 ? `${name.slice(0, 23)}…` : name;
-  context.fillText(shortName, 104, 372);
-  context.fillStyle = '#cbd5e1';
-  context.font = '400 24px Arial';
-  context.fillText('Presenta esta tarjeta al llegar.', 104, 452);
-  context.fillText('No contiene información clínica.', 104, 492);
+  context.font = '400 23px system-ui, -apple-system, sans-serif';
+  context.fillText('Presenta esta tarjeta al llegar a consulta.', 75, 450);
+  context.fillText('Acceso rápido y seguro a tu expediente.', 75, 488);
 
+  // QR Container (clean rounded white card)
   const qrImage = document.createElement('img');
   qrImage.src = qrDataUrl;
   await new Promise<void>((resolve, reject) => {
     qrImage.onload = () => resolve();
     qrImage.onerror = () => reject(new Error('No se pudo cargar el QR.'));
   });
+
   context.fillStyle = '#ffffff';
   context.beginPath();
-  context.roundRect(660, 96, 326, 430, 28);
+  context.roundRect(660, 85, 345, 510, 32);
   context.fill();
-  context.drawImage(qrImage, 696, 124, 254, 254);
-  context.fillStyle = '#071b2e';
-  context.font = '900 22px Arial';
+
+  // Draw QR code centered in the white container
+  context.drawImage(qrImage, 695, 115, 275, 275);
+
+  context.fillStyle = '#0f172a';
+  context.font = '800 24px system-ui, -apple-system, sans-serif';
   context.textAlign = 'center';
-  context.fillText('CÓDIGO PERSONAL', 823, 432);
-  context.fillStyle = '#475569';
-  context.font = '400 18px Arial';
-  context.fillText('Muéstralo al profesional', 823, 468);
+  context.fillText('CÓDIGO PERSONAL', 832, 440);
+
+  context.fillStyle = '#64748b';
+  context.font = '500 20px system-ui, -apple-system, sans-serif';
+  context.fillText('Muéstralo en recepción', 832, 478);
   context.textAlign = 'left';
 
   return canvas.toDataURL('image/png');
@@ -863,25 +929,47 @@ function PatientQrCard({ name, qrValue }: { name: string; qrValue: string }) {
   }
 
   return (
-    <div className="mt-6">
-      <div className="overflow-hidden rounded-3xl border bg-slate-950 p-3 shadow-lg">
+    <div className="mt-5 w-full">
+      <div className="mx-auto max-w-lg overflow-hidden rounded-2xl shadow-xl ring-1 ring-slate-900/10">
         {cardUrl ? (
-          <Image unoptimized src={cardUrl} width={1080} height={680} alt={`Tarjeta QR de ${name}`} className="h-auto w-full rounded-2xl" />
+          <Image
+            unoptimized
+            src={cardUrl}
+            width={1080}
+            height={680}
+            alt={`Tarjeta QR de ${name}`}
+            className="block h-auto w-full object-contain"
+          />
         ) : (
-          <div className="grid aspect-[1080/680] place-items-center text-white"><LoaderCircle className="size-8 animate-spin" /></div>
+          <div className="grid aspect-[1080/680] place-items-center bg-slate-900 text-white">
+            <LoaderCircle className="size-8 animate-spin" />
+          </div>
         )}
       </div>
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-center">
-        <Button onClick={() => void share()} disabled={!cardUrl || sharing} className="h-12 rounded-xl font-bold">
-          {sharing ? <LoaderCircle className="animate-spin" /> : <QrCode />} Enviar o compartir
+      <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-3 max-w-lg mx-auto">
+        <Button
+          onClick={() => void share()}
+          disabled={!cardUrl || sharing}
+          className="h-11 w-full sm:w-auto flex-1 rounded-xl font-bold bg-cyan-700 hover:bg-cyan-800 text-white shadow-sm"
+        >
+          {sharing ? <LoaderCircle className="size-4 animate-spin mr-2" /> : <QrCode className="size-4 mr-2" />} Enviar o compartir
         </Button>
         {cardUrl && (
-          <a href={cardUrl} download={fileName} className={cn(buttonVariants({ variant: 'outline' }), 'h-12 rounded-xl px-5 font-bold')}>
-            <Download /> Descargar imagen
+          <a
+            href={cardUrl}
+            download={fileName}
+            className={cn(
+              buttonVariants({ variant: 'outline' }),
+              'h-11 w-full sm:w-auto flex-1 rounded-xl px-5 font-bold border-slate-200 hover:bg-slate-50',
+            )}
+          >
+            <Download className="size-4 mr-2" /> Descargar imagen
           </a>
         )}
       </div>
-      <p className="mt-3 text-center text-xs text-muted-foreground">Puedes enviarla por WhatsApp o imprimirla. El QR no muestra datos médicos.</p>
+      <p className="mt-3 text-center text-xs text-muted-foreground">
+        Puedes enviarla por WhatsApp o imprimirla. El QR no muestra datos médicos.
+      </p>
     </div>
   );
 }
@@ -916,9 +1004,29 @@ function NewPatientDialog({ open, onOpenChange, onSaved, onFinished }: { open: b
 
   return (
     <Dialog open={open} onOpenChange={(next) => { onOpenChange(next); if (!next) { setResult(null); setError(''); } }}>
-      <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto rounded-[1.75rem] p-6 sm:p-7">
+      <DialogContent className={cn(
+        "max-h-[92vh] w-full overflow-y-auto overflow-x-hidden rounded-[1.75rem] p-6 sm:p-8",
+        result ? "sm:max-w-2xl" : "sm:max-w-2xl"
+      )}>
         {result ? (
-          <div className="py-2 text-center"><span className="mx-auto grid size-16 place-items-center rounded-full bg-emerald-100 text-emerald-700"><Check className="size-8" /></span><DialogTitle className="mt-5 text-2xl font-black">Paciente y tarjeta creados</DialogTitle><DialogDescription className="mt-2 text-base">Envía esta imagen a {result.firstName} {result.lastName} para que la muestre en cada visita.</DialogDescription><PatientQrCard name={`${result.firstName} ${result.lastName}`} qrValue={result.qrValue} /><Button className="mt-4 h-12 rounded-xl px-6 font-bold" onClick={() => onFinished(result.patient)}>Terminar y abrir expediente <ChevronRight /></Button></div>
+          <div className="py-2 text-center flex flex-col items-center">
+            <span className="mx-auto grid size-16 place-items-center rounded-full bg-emerald-100 text-emerald-700 shadow-sm">
+              <Check className="size-8 stroke-[2.5]" />
+            </span>
+            <DialogTitle className="mt-4 text-2xl font-black text-slate-900">
+              Paciente y tarjeta creados
+            </DialogTitle>
+            <DialogDescription className="mt-2 text-base text-slate-600 max-w-md mx-auto">
+              Envía esta tarjeta a <strong className="text-slate-900">{result.firstName} {result.lastName}</strong> para que la muestre en cada visita.
+            </DialogDescription>
+            <PatientQrCard name={`${result.firstName} ${result.lastName}`} qrValue={result.qrValue} />
+            <Button
+              className="mt-6 h-12 w-full sm:w-auto min-w-[240px] rounded-xl px-6 font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
+              onClick={() => onFinished(result.patient)}
+            >
+              Terminar y abrir expediente <ChevronRight className="ml-1 size-4" />
+            </Button>
+          </div>
         ) : (
           <><DialogHeader><DialogTitle className="text-xl font-extrabold">Registrar paciente</DialogTitle><DialogDescription className="text-base">Crea su expediente, plan de sesiones, primera cita y tarjeta QR.</DialogDescription></DialogHeader><form onSubmit={submit} className="mt-2 grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="firstName">Nombres</Label><Input id="firstName" name="firstName" required className="h-11 rounded-xl" /></div><div className="space-y-2"><Label htmlFor="lastName">Apellidos</Label><Input id="lastName" name="lastName" required className="h-11 rounded-xl" /></div><div className="space-y-2"><Label htmlFor="phone">Teléfono</Label><Input id="phone" name="phone" inputMode="tel" className="h-11 rounded-xl" /></div><div className="space-y-2"><Label htmlFor="birthDate">Fecha de nacimiento</Label><Input id="birthDate" name="birthDate" type="date" className="h-11 rounded-xl" /></div><div className="space-y-2"><Label htmlFor="sex">Sexo</Label><Select name="sex"><SelectTrigger id="sex" className="h-11 w-full rounded-xl"><SelectValue placeholder="Seleccionar" /></SelectTrigger><SelectContent><SelectItem value="female">Femenino</SelectItem><SelectItem value="male">Masculino</SelectItem><SelectItem value="not_specified">No especificado</SelectItem></SelectContent></Select></div><div className="space-y-2"><Label htmlFor="totalSessions">Plan de sesiones</Label><Input id="totalSessions" name="totalSessions" type="number" min="1" max="99" defaultValue="8" className="h-11 rounded-xl" /></div><div className="space-y-2"><Label htmlFor="appointmentDate">Fecha de primera cita</Label><Input id="appointmentDate" name="appointmentDate" type="date" defaultValue={today} className="h-11 rounded-xl" /></div><div className="space-y-2"><Label htmlFor="appointmentTime">Hora de la cita</Label><Input id="appointmentTime" name="appointmentTime" type="time" min="08:00" max="21:00" className="h-11 rounded-xl" /></div>{error && <p className="sm:col-span-2 rounded-xl bg-red-50 p-3 text-sm font-medium text-red-800">{error}</p>}<Button type="submit" disabled={saving} className="mt-2 h-12 rounded-xl font-bold sm:col-span-2">{saving ? <LoaderCircle className="animate-spin" /> : <UserPlus />} Guardar y crear tarjeta QR</Button></form></>
         )}
