@@ -26,10 +26,12 @@ export async function POST(request: Request) {
   const now = new Date().toISOString();
 
   try {
-    await env.FILES.put(objectKey, file.stream(), {
-      httpMetadata: { contentType: file.type },
-      customMetadata: { patientId, category },
-    });
+    if (env.FILES) {
+      await env.FILES.put(objectKey, file.stream(), {
+        httpMetadata: { contentType: file.type },
+        customMetadata: { patientId, category },
+      });
+    }
     await env.DB.batch([
       env.DB.prepare(
         `INSERT INTO media_files

@@ -159,7 +159,9 @@ export async function DELETE(request: Request) {
     const files = await env.DB.prepare(
       'SELECT object_key AS objectKey FROM media_files WHERE patient_id = ?',
     ).bind(body.patientId).all<{ objectKey: string }>();
-    await Promise.all(files.results.map((file) => env.FILES.delete(file.objectKey)));
+    if (env.FILES) {
+      await Promise.all(files.results.map((file) => env.FILES!.delete(file.objectKey)));
+    }
     await env.DB.prepare('DELETE FROM patients WHERE id = ?').bind(body.patientId).run();
     return NextResponse.json({ deleted: true });
   } catch (error) {
