@@ -2,6 +2,7 @@ import { env } from 'cloudflare:workers';
 import { NextResponse } from 'next/server';
 import { getChatGPTUser } from '@/app/chatgpt-auth';
 import { makeId, todayInLima } from '@/lib/clinic';
+import { ensureDbInitialized } from '@/db';
 
 function numberOrNull(value: unknown) {
   const parsed = Number(value);
@@ -13,6 +14,8 @@ export async function GET(request: Request) {
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   const patientId = new URL(request.url).searchParams.get('patientId');
   if (!patientId) return NextResponse.json({ error: 'Falta el paciente.' }, { status: 400 });
+
+  await ensureDbInitialized();
 
   try {
     const [assessment, plan, payments, supplementRows] = await Promise.all([

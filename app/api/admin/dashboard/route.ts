@@ -2,6 +2,7 @@ import { env } from 'cloudflare:workers';
 import { NextResponse } from 'next/server';
 import { getChatGPTUser } from '@/app/chatgpt-auth';
 import { formatClinicTime, makePatientQrValue, todayInLima } from '@/lib/clinic';
+import { ensureDbInitialized } from '@/db';
 
 const demoSchedule = [
   { id: 'demo-1', patientId: 'demo-ana', time: '09:00', name: 'Ana Torres', status: 'completed', used: 3, total: 8 },
@@ -13,6 +14,8 @@ const demoSchedule = [
 export async function GET() {
   const user = await getChatGPTUser();
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
+  await ensureDbInitialized();
 
   try {
     const [scheduleResult, patientsResult] = await Promise.all([

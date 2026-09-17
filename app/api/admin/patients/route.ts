@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:workers';
 import { NextResponse } from 'next/server';
 import { getChatGPTUser } from '@/app/chatgpt-auth';
+import { ensureDbInitialized } from '@/db';
 import {
   generatePin,
   generatePatientQrToken,
@@ -14,6 +15,8 @@ import {
 export async function POST(request: Request) {
   const user = await getChatGPTUser();
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
+
+  await ensureDbInitialized();
 
   const body = (await request.json()) as {
     firstName?: string;
