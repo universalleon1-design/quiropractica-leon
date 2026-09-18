@@ -226,9 +226,9 @@ export async function PATCH(request: Request) {
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
   const body = (await request.json()) as { patientId?: string };
-  if (!body.patientId || body.patientId.startsWith('demo-')) {
+  if (!body.patientId) {
     return NextResponse.json(
-      { error: 'Selecciona un paciente real para renovar su QR.' },
+      { error: 'Falta el paciente para renovar su QR.' },
       { status: 400 },
     );
   }
@@ -274,8 +274,11 @@ export async function DELETE(request: Request) {
   const user = await getChatGPTUser();
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
   const body = (await request.json()) as { patientId?: string };
-  if (!body.patientId || body.patientId.startsWith('demo-')) {
-    return NextResponse.json({ error: 'Selecciona un paciente real.' }, { status: 400 });
+  if (!body.patientId) {
+    return NextResponse.json({ error: 'Selecciona un paciente válido.' }, { status: 400 });
+  }
+  if (body.patientId.startsWith('demo-')) {
+    return NextResponse.json({ deleted: true });
   }
   try {
     const files = await env.DB.prepare(
@@ -284,7 +287,18 @@ export async function DELETE(request: Request) {
     if (env.FILES) {
       await Promise.all(files.results.map((file) => env.FILES!.delete(file.objectKey)));
     }
-    await env.DB.prepare('DELETE FROM patients WHERE id = ?').bind(body.patientId).run();
+    await env.DB.batch([
+      env.DB.prepare('DELETE FROM patient_anamnesis WHERE patient_id = ?').bind(body.patientId),
+      env.DB.prepare('DELETE FROM patient_assessments WHERE patient_id = ?').bind(body.patientId),
+      env.DB.prepare('DELETE FROM appointments WHERE patient_id = ?').bind(body.patientId),
+      env.DB.prepare('DELETE FROM check_ins WHERE patient_id = ?').bind(body.patientId),
+      env.DB.prepare('DELETE FROM session_packages WHERE patient_id = ?').bind(body.patientId),
+      env.DB.prepare('DELETE FROM clinical_visits WHERE patient_id = ?').bind(body.patientId),
+      env.DB.prepare('DELETE FROM payments WHERE patient_id = ?').bind(body.patientId),
+      env.DB.prepare('DELETE FROM supplements WHERE patient_id = ?').bind(body.patientId),
+      env.DB.prepare('DELETE FROM media_files WHERE patient_id = ?').bind(body.patientId),
+      env.DB.prepare('DELETE FROM patients WHERE id = ?').bind(body.patientId),
+    ]);
     return NextResponse.json({ deleted: true });
   } catch (error) {
     console.error('patient.delete.failed', error);

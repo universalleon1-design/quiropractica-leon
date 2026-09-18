@@ -73,8 +73,8 @@ export async function POST(request: Request) {
     paymentAmount?: string | number; paymentMethod?: string;
   };
   const patientId = body.patientId?.trim() || '';
-  if (!patientId || patientId.startsWith('demo-')) {
-    return NextResponse.json({ error: 'Selecciona un paciente real.' }, { status: 400 });
+  if (!patientId) {
+    return NextResponse.json({ error: 'Falta el paciente.' }, { status: 400 });
   }
 
   const weightKg = numberOrNull(body.weightKg);

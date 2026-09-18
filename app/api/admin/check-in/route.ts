@@ -16,30 +16,12 @@ type PatientRecord = {
   total: number;
 };
 
-const demoPatients: Record<string, PatientRecord> = {
-  'QLU-DEMO:ANA': { id: 'demo-ana', name: 'Ana Torres', used: 3, total: 8 },
-  'QLU-DEMO:LUIS': { id: 'demo-luis', name: 'Luis Vargas', used: 5, total: 10 },
-  'QLU-DEMO:ROSA': { id: 'demo-rosa', name: 'Rosa Medina', used: 1, total: 6 },
-};
-
 export async function POST(request: Request) {
   const user = await getChatGPTUser();
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
   const body = (await request.json()) as { qrValue?: string };
   const qrValue = body.qrValue?.trim() ?? '';
-  const demo = demoPatients[qrValue];
-  if (demo) {
-    return NextResponse.json({
-      patientId: demo.id,
-      name: demo.name,
-      used: demo.used,
-      total: demo.total,
-      appointmentTime: formatClinicTime(timeInLima()),
-      checkedInAt: new Date().toISOString(),
-      demo: true,
-    });
-  }
 
   const token = readPatientQrToken(qrValue);
   if (!token) {

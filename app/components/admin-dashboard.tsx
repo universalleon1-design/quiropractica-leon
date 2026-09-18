@@ -272,12 +272,6 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
               />
             ) : (
             <>
-              {data.demo && (
-                <div className="mb-5 flex items-center gap-3 rounded-2xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-950">
-                  <Activity className="size-5 shrink-0" />
-                  Estás viendo datos de ejemplo. El primer paciente real que registres quedará guardado en la base de datos.
-                </div>
-              )}
               {view === 'scanner' && <QrScannerView onRegistered={() => void refresh()} />}
               {view === 'today' && (
                 <TodayView
@@ -314,7 +308,12 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
                 />
               )}
               {view === 'patients' && (
-                <PatientsView patients={data.patients} onPatient={setPatientOpen} onNew={() => setView('new-patient')} />
+                <PatientsView
+                  patients={data.patients}
+                  onPatient={setPatientOpen}
+                  onNew={() => setView('new-patient')}
+                  onDeleted={() => void refresh()}
+                />
               )}
               {view === 'new-patient' && (
                 <NewPatientPageView
@@ -477,7 +476,6 @@ function QrScannerView({ onRegistered }: { onRegistered: () => void }) {
                 </div>
               </div>
               {result.walkIn && <p className="mx-auto mt-4 max-w-md rounded-xl bg-cyan-300/15 px-4 py-3 text-sm text-cyan-100">No tenía cita para hoy; se añadió como llegada sin cita.</p>}
-              {result.demo && <p className="mt-4 text-sm text-white/55">Resultado de demostración. No modifica la agenda.</p>}
               <Button onClick={reset} className="mt-8 h-14 rounded-2xl bg-white px-7 text-base font-black text-slate-950 hover:bg-white/90">
                 <QrCode className="size-5" /> Escanear otro paciente
               </Button>
@@ -525,16 +523,6 @@ function QrScannerView({ onRegistered }: { onRegistered: () => void }) {
                 </li>
               ))}
             </ol>
-          </CardContent>
-        </Card>
-        <Card className="rounded-3xl border-0 bg-cyan-50 shadow-sm">
-          <CardContent className="p-6">
-            <QrCode className="size-7 text-cyan-800" />
-            <h3 className="mt-4 font-extrabold">Probar sin cámara</h3>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">Usa una tarjeta de demostración para comprobar el resultado.</p>
-            <Button variant="outline" onClick={() => void registerQr('QLU-DEMO:LUIS')} disabled={processing} className="mt-4 w-full rounded-xl bg-white">
-              {processing ? <LoaderCircle className="animate-spin" /> : <Sparkles />} Probar con Luis
-            </Button>
           </CardContent>
         </Card>
       </div>
@@ -688,12 +676,40 @@ function TodayView({
   );
 }
 
-function PatientsView({ patients, onPatient, onNew }: { patients: Patient[]; onPatient: (patient: Patient) => void; onNew: () => void }) {
+function PatientsView({
+  patients,
+  onPatient,
+  onNew,
+  onDeleted,
+}: {
+  patients: Patient[];
+  onPatient: (patient: Patient) => void;
+  onNew: () => void;
+  onDeleted: () => void;
+}) {
   const [query, setQuery] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const filtered = useMemo(
     () => patients.filter((patient) => patient.name.toLowerCase().includes(query.toLowerCase())),
     [patients, query],
   );
+
+  async function handleDelete(id: string) {
+    setDeletingId(id);
+    try {
+      const response = await fetch('/api/admin/patients', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patientId: id }),
+      });
+      if (response.ok) {
+        onDeleted();
+      }
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -702,7 +718,7 @@ function PatientsView({ patients, onPatient, onNew }: { patients: Patient[]; onP
           <h2 className="text-3xl font-black tracking-tight">Pacientes</h2>
           <p className="mt-1 text-muted-foreground">Expedientes, sesiones y evolución clínica.</p>
         </div>
-        <Button onClick={onNew} className="h-11 rounded-xl"><Plus /> Registrar paciente</Button>
+        <Button onClick={onNew} className="h-11 rounded-xl font-bold"><Plus className="mr-1.5 size-4" /> Registrar paciente</Button>
       </div>
       <Card className="rounded-3xl border-0 shadow-sm">
         <CardHeader className="pb-3">
@@ -713,19 +729,94 @@ function PatientsView({ patients, onPatient, onNew }: { patients: Patient[]; onP
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((patient) => (
-            <button key={patient.id} onClick={() => onPatient(patient)} className="rounded-2xl border border-border p-4 text-left transition hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-md">
-              <div className="flex items-start gap-3">
-                <span className="grid size-11 place-items-center rounded-2xl bg-cyan-100 font-black text-cyan-900">{patient.name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="block font-bold">{patient.name}</span>
-                  <span className="mt-0.5 block text-sm text-muted-foreground">{patient.phone || 'Sin teléfono'}</span>
-                </span>
-                <ChevronRight className="size-5 text-muted-foreground" />
+            <div
+              key={patient.id}
+              className="group relative flex flex-col justify-between rounded-2xl border border-border bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-md"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div
+                  onClick={() => onPatient(patient)}
+                  className="flex flex-1 cursor-pointer items-start gap-3 min-w-0"
+                >
+                  <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-cyan-100 font-black text-cyan-900">
+                    {patient.name.split(' ').map((part) => part[0]).slice(0, 2).join('')}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <span className="block truncate font-bold text-slate-900 group-hover:text-cyan-800">{patient.name}</span>
+                    <span className="mt-0.5 block text-sm text-muted-foreground">{patient.phone || 'Sin teléfono'}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <AlertDialog>
+                    <AlertDialogTrigger render={
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        disabled={deletingId === patient.id}
+                        className="size-8 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 transition"
+                        title="Eliminar paciente"
+                      />
+                    }>
+                      {deletingId === patient.id ? (
+                        <LoaderCircle className="size-4 animate-spin text-red-600" />
+                      ) : (
+                        <Trash2 className="size-4" />
+                      )}
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="rounded-3xl">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="text-xl font-bold">¿Eliminar a {patient.name}?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Se borrarán su expediente, citas, asistencias, pagos, fotos y ficha de evaluación. Esta acción no se puede deshacer.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => void handleDelete(patient.id)}
+                          className="rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold"
+                        >
+                          Sí, eliminar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => onPatient(patient)}
+                    className="size-8 rounded-lg text-muted-foreground hover:text-slate-900"
+                    title="Abrir expediente"
+                  >
+                    <ChevronRight className="size-5" />
+                  </Button>
+                </div>
               </div>
-              <div className="mt-4 flex justify-between text-sm"><span className="text-muted-foreground">Plan de sesiones</span><strong>{patient.used} / {patient.total}</strong></div>
-              <Progress value={patient.total ? (patient.used / patient.total) * 100 : 0} className="mt-2" />
-            </button>
+
+              <div
+                className="mt-4 cursor-pointer"
+                onClick={() => onPatient(patient)}
+              >
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Plan de sesiones</span>
+                  <strong>{patient.used} / {patient.total}</strong>
+                </div>
+                <Progress value={patient.total ? (patient.used / patient.total) * 100 : 0} className="mt-2" />
+              </div>
+            </div>
           ))}
+          {filtered.length === 0 && (
+            <div className="col-span-full py-12 text-center text-muted-foreground">
+              <Users className="mx-auto size-12 opacity-30 text-cyan-800" />
+              <p className="mt-3 font-semibold text-slate-800">No hay pacientes registrados</p>
+              <p className="text-sm mt-1">Registra a tu primer paciente para llevar su ficha clínica y control de asistencia.</p>
+              <Button onClick={onNew} className="mt-4 rounded-xl font-bold">
+                <Plus className="mr-1.5 size-4" /> Registrar paciente
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -879,7 +970,7 @@ function PatientRecordPage({ patient, onBack, onDeleted, onSaved }: { patient: P
   const [height, setHeight] = useState('');
 
   const loadRecord = useCallback(async () => {
-    if (!patient || patient.id.startsWith('demo-')) return;
+    if (!patient) return;
     await Promise.resolve();
     setRecordLoading(true);
     const response = await fetch(`/api/admin/records?patientId=${encodeURIComponent(patient.id)}`);
@@ -907,7 +998,6 @@ function PatientRecordPage({ patient, onBack, onDeleted, onSaved }: { patient: P
   async function upload(file: File | undefined, category: string) {
     if (!file || !patient) return;
     setUploading(category); setMessage('');
-    if (patient.id.startsWith('demo-')) { await new Promise((resolve) => setTimeout(resolve, 600)); setMessage(`Fotografía “${category === 'before' ? 'antes' : 'después'}” preparada en la demostración.`); setUploading(''); return; }
     const data = new FormData(); data.set('file', file); data.set('patientId', patient.id); data.set('category', category);
     const response = await fetch('/api/admin/media', { method: 'POST', body: data });
     const body = (await response.json()) as { error?: string; fileName?: string };
@@ -916,11 +1006,6 @@ function PatientRecordPage({ patient, onBack, onDeleted, onSaved }: { patient: P
 
   async function createQr() {
     if (!patient) return;
-    if (patient.id.startsWith('demo-')) {
-      setQrValue(patient.qrValue ?? 'QLU-DEMO:LUIS');
-      setShowQr(true);
-      return;
-    }
     setQrLoading(true);
     setMessage('');
     const response = await fetch('/api/admin/patients', {
@@ -1155,7 +1240,7 @@ function PatientRecordPage({ patient, onBack, onDeleted, onSaved }: { patient: P
             </div>
             {recordLoading ? (
               <div className="flex items-center gap-2 rounded-2xl bg-muted p-4 text-sm text-muted-foreground"><LoaderCircle className="size-4 animate-spin" /> Cargando expediente…</div>
-            ) : !patient.id.startsWith('demo-') && (
+            ) : (
               <form key={record?.assessment?.assessedAt ?? 'new'} onSubmit={saveAssessment} className="space-y-5 rounded-3xl border bg-white p-5">
                 <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-cyan-100 text-cyan-900"><Scale className="size-5" /></span><div><h3 className="font-extrabold">Evaluación y plan</h3><p className="text-sm text-muted-foreground">Registra lo observado y lo declarado por el paciente.</p></div></div>
                 <div className="grid gap-4 md:grid-cols-3">
@@ -1226,12 +1311,10 @@ function PatientRecordPage({ patient, onBack, onDeleted, onSaved }: { patient: P
             {message && <p className="rounded-xl bg-muted p-3 text-sm font-medium">{message}</p>}
             <div className="flex flex-wrap justify-between gap-2">
               <Button variant="outline" className="rounded-xl" onClick={() => document.getElementById('reason')?.focus()}><FileText /> Ir a evaluación</Button>
-              {!patient.id.startsWith('demo-') && (
-                <AlertDialog>
-                  <AlertDialogTrigger render={<Button variant="outline" className="rounded-xl border-red-200 text-red-700 hover:bg-red-50" />}><Trash2 /> Eliminar paciente</AlertDialogTrigger>
-                  <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Eliminar a {patient.name}?</AlertDialogTitle><AlertDialogDescription>Se borrarán su expediente, citas, asistencias, pagos, fotos registradas y suplementos. Esta acción no se puede deshacer.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => void deletePatient()} disabled={deleting} className="bg-red-700 hover:bg-red-800">{deleting ? 'Eliminando…' : 'Sí, eliminar'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
-                </AlertDialog>
-              )}
+              <AlertDialog>
+                <AlertDialogTrigger render={<Button variant="outline" className="rounded-xl border-red-200 text-red-700 hover:bg-red-50" />}><Trash2 /> Eliminar paciente</AlertDialogTrigger>
+                <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>¿Eliminar a {patient.name}?</AlertDialogTitle><AlertDialogDescription>Se borrarán su expediente, citas, asistencias, pagos, fotos registradas y suplementos. Esta acción no se puede deshacer.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => void deletePatient()} disabled={deleting} className="bg-red-700 hover:bg-red-800">{deleting ? 'Eliminando…' : 'Sí, eliminar'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+              </AlertDialog>
             </div>
       </div>
     </div>

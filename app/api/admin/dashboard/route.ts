@@ -4,13 +4,6 @@ import { getChatGPTUser } from '@/app/chatgpt-auth';
 import { formatClinicTime, makePatientQrValue, todayInLima } from '@/lib/clinic';
 import { ensureDbInitialized } from '@/db';
 
-const demoSchedule = [
-  { id: 'demo-1', patientId: 'demo-ana', time: '09:00', name: 'Ana Torres', status: 'completed', used: 3, total: 8 },
-  { id: 'demo-2', patientId: 'demo-luis', time: '10:30', name: 'Luis Vargas', status: 'checked_in', used: 5, total: 10 },
-  { id: 'demo-3', patientId: 'demo-rosa', time: '12:00', name: 'Rosa Medina', status: 'scheduled', used: 1, total: 6 },
-  { id: 'demo-4', patientId: 'demo-carlos', time: '16:00', name: 'Carlos Mendoza', status: 'scheduled', used: 4, total: 8 },
-];
-
 export async function GET() {
   const user = await getChatGPTUser();
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
@@ -18,7 +11,7 @@ export async function GET() {
   await ensureDbInitialized();
 
   try {
-    const [scheduleResult, patientsResult] = await Promise.all([
+    const [scheduleResult, patientsResult, statsTotalResult] = await Promise.all([
       env.DB.prepare(
         `SELECT a.id, a.patient_id AS patientId, a.start_time AS time,
                 p.first_name || ' ' || p.last_name AS name,
@@ -41,42 +34,38 @@ export async function GET() {
          FROM patients p
          LEFT JOIN session_packages sp ON sp.patient_id = p.id
          ORDER BY p.created_at DESC
-         LIMIT 8`,
+         LIMIT 200`,
       ).all<{ id: string; name: string; phone: string | null; used: number; total: number; qrToken: string | null }>(),
+      env.DB.prepare('SELECT COUNT(*) as count FROM patients').first<{ count: number }>(),
     ]);
 
-    if (scheduleResult.results.length || patientsResult.results.length) {
-      const schedule = scheduleResult.results.map((item) => ({
-        ...item,
-        time: formatClinicTime(item.time),
-      }));
-      return NextResponse.json({
-        schedule,
-        patients: patientsResult.results.map((patient) => ({
-          ...patient,
-          qrValue: patient.qrToken ? makePatientQrValue(patient.qrToken) : null,
-          qrToken: undefined,
-        })),
-        stats: {
-          today: schedule.length,
-          checkedIn: schedule.filter((item) => item.status === 'checked_in').length,
-          completed: schedule.filter((item) => item.status === 'completed').length,
-          patients: patientsResult.results.length,
-        },
-      });
-    }
-  } catch {
-    // Use representative data until the first patient is registered.
-  }
+    const schedule = (scheduleResult?.results ?? []).map((item) => ({
+      ...item,
+      time: formatClinicTime(item.time),
+    }));
 
-  return NextResponse.json({
-    schedule: demoSchedule.map((item) => ({ ...item, time: formatClinicTime(item.time) })),
-    patients: [
-      { id: 'demo-ana', name: 'Ana Torres', phone: '987 654 120', used: 3, total: 8, qrValue: 'QLU-DEMO:ANA' },
-      { id: 'demo-luis', name: 'Luis Vargas', phone: '955 332 801', used: 5, total: 10, qrValue: 'QLU-DEMO:LUIS' },
-      { id: 'demo-rosa', name: 'Rosa Medina', phone: '944 218 620', used: 1, total: 6, qrValue: 'QLU-DEMO:ROSA' },
-    ],
-    stats: { today: 4, checkedIn: 1, completed: 1, patients: 24 },
-    demo: true,
-  });
+    const patients = (patientsResult?.results ?? []).map((patient) => ({
+      ...patient,
+      qrValue: patient.qrToken ? makePatientQrValue(patient.qrToken) : null,
+      qrToken: undefined,
+    }));
+
+    return NextResponse.json({
+      schedule,
+      patients,
+      stats: {
+        today: schedule.length,
+        checkedIn: schedule.filter((item) => item.status === 'checked_in').length,
+        completed: schedule.filter((item) => item.status === 'completed').length,
+        patients: statsTotalResult?.count ?? patients.length,
+      },
+    });
+  } catch (error) {
+    console.error('dashboard.read.failed', error);
+    return NextResponse.json({
+      schedule: [],
+      patients: [],
+      stats: { today: 0, checkedIn: 0, completed: 0, patients: 0 },
+    });
+  }
 }
