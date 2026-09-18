@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   await ensureDbInitialized();
 
   try {
-    const [assessment, plan, payments, supplementRows] = await Promise.all([
+    const [assessment, plan, payments, supplementRows, anamnesis, patientInfo] = await Promise.all([
       env.DB.prepare(
         `SELECT reason, conditions, body_analysis AS bodyAnalysis, weight_kg AS weightKg,
                 height_cm AS heightCm, bmi, healthy_weight_min_kg AS healthyWeightMinKg,
@@ -40,8 +40,22 @@ export async function GET(request: Request) {
         `SELECT id, name, instructions, quantity, recorded_at AS recordedAt
          FROM supplements WHERE patient_id = ? ORDER BY recorded_at DESC`,
       ).bind(patientId).all(),
+      env.DB.prepare(
+        `SELECT * FROM patient_anamnesis WHERE patient_id = ? ORDER BY created_at DESC LIMIT 1`,
+      ).bind(patientId).first(),
+      env.DB.prepare(
+        `SELECT id, first_name || ' ' || last_name AS name, dni, address, occupation, birth_date AS birthDate, sex, phone
+         FROM patients WHERE id = ? LIMIT 1`,
+      ).bind(patientId).first(),
     ]);
-    return NextResponse.json({ assessment, plan, payments: payments.results, supplements: supplementRows.results });
+    return NextResponse.json({
+      assessment,
+      plan,
+      payments: payments.results,
+      supplements: supplementRows.results,
+      anamnesis,
+      patientInfo,
+    });
   } catch (error) {
     console.error('patient.record.read.failed', error);
     return NextResponse.json({ error: 'No se pudo cargar el expediente.' }, { status: 503 });

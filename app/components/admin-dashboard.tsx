@@ -1,8 +1,6 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import Image from 'next/image';
-import QRCode from 'qrcode';
 import {
   Activity,
   ArrowLeft,
@@ -86,6 +84,8 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { NewPatientPageView } from '@/app/components/new-patient-page';
+import { PatientQrCard } from '@/app/components/patient-qr-card';
 
 type ScheduleItem = {
   id: string;
@@ -113,12 +113,13 @@ type DashboardData = {
   demo?: boolean;
 };
 
-type View = 'scanner' | 'today' | 'patients' | 'calendar' | 'supplements';
+type View = 'scanner' | 'today' | 'patients' | 'new-patient' | 'calendar' | 'supplements';
 
 const navItems: { id: View; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'scanner', label: 'Escanear QR', icon: Camera },
   { id: 'today', label: 'Hoy', icon: LayoutDashboard },
   { id: 'patients', label: 'Pacientes', icon: Users },
+  { id: 'new-patient', label: 'Registrar Paciente', icon: UserPlus },
   { id: 'calendar', label: 'Agenda', icon: CalendarDays },
   { id: 'supplements', label: 'Suplementos', icon: Leaf },
 ];
@@ -135,7 +136,6 @@ const statusLabels: Record<string, { label: string; className: string }> = {
 export function AdminDashboard({ user }: { user: { name: string; email: string } }) {
   const [view, setView] = useState<View>('scanner');
   const [data, setData] = useState<DashboardData | null>(null);
-  const [newPatientOpen, setNewPatientOpen] = useState(false);
   const [patientOpen, setPatientOpen] = useState<Patient | null>(null);
   const [supplementOpen, setSupplementOpen] = useState(false);
 
@@ -244,11 +244,13 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
               <h1 className="text-xl font-black tracking-tight">{patientOpen ? patientOpen.name : title}</h1>
             </div>
           </div>
-          <Button onClick={() => setNewPatientOpen(true)} className={cn('h-11 rounded-xl px-4 font-bold', patientOpen && 'hidden')}>
-            <UserPlus className="size-4" />
-            <span className="hidden sm:inline">Nuevo paciente</span>
-            <span className="sm:hidden">Nuevo</span>
-          </Button>
+          {view !== 'scanner' && view !== 'new-patient' && !patientOpen && (
+            <Button onClick={() => setView('new-patient')} className="h-11 rounded-xl px-4 font-bold">
+              <UserPlus className="size-4" />
+              <span className="hidden sm:inline">Nuevo paciente</span>
+              <span className="sm:hidden">Nuevo</span>
+            </Button>
+          )}
         </header>
 
         <div className="mx-auto w-full max-w-[1240px] p-4 sm:p-7">
@@ -312,7 +314,16 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
                 />
               )}
               {view === 'patients' && (
-                <PatientsView patients={data.patients} onPatient={setPatientOpen} onNew={() => setNewPatientOpen(true)} />
+                <PatientsView patients={data.patients} onPatient={setPatientOpen} onNew={() => setView('new-patient')} />
+              )}
+              {view === 'new-patient' && (
+                <NewPatientPageView
+                  onSaved={() => void refresh()}
+                  onFinished={(patient) => {
+                    void refresh();
+                    setPatientOpen(patient);
+                  }}
+                />
               )}
               {view === 'calendar' && <CalendarView schedule={data.schedule} />}
               {view === 'supplements' && (
@@ -324,12 +335,6 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
         </div>
       </SidebarInset>
 
-      <NewPatientDialog
-        open={newPatientOpen}
-        onOpenChange={setNewPatientOpen}
-        onSaved={() => void refresh()}
-        onFinished={(patient) => { setNewPatientOpen(false); setPatientOpen(patient); }}
-      />
       <SupplementDialog
         patients={data?.patients ?? []}
         open={supplementOpen}
@@ -794,248 +799,62 @@ function SupplementsView({ patients, onNew }: { patients: Patient[]; onNew: () =
   );
 }
 
-type PatientQrResult = {
-  firstName: string;
-  lastName: string;
-  qrValue: string;
-  patient: Patient;
-};
 
-async function buildPatientCard(name: string, qrValue: string) {
-  const qrDataUrl = await QRCode.toDataURL(qrValue, {
-    width: 430,
-    margin: 2,
-    errorCorrectionLevel: 'H',
-    color: { dark: '#071b2e', light: '#ffffff' },
-  });
-  const canvas = document.createElement('canvas');
-  canvas.width = 1080;
-  canvas.height = 680;
-  const context = canvas.getContext('2d');
-  if (!context) throw new Error('No se pudo crear la tarjeta.');
 
-  // Modern background gradient
-  const gradient = context.createLinearGradient(0, 0, 1080, 680);
-  gradient.addColorStop(0, '#0a233a');
-  gradient.addColorStop(1, '#061320');
-  context.fillStyle = gradient;
-  context.beginPath();
-  context.roundRect(0, 0, 1080, 680, 48);
-  context.fill();
 
-  // Cyan vertical accent bar on the left
-  context.fillStyle = '#06b6d4';
-  context.beginPath();
-  context.roundRect(0, 0, 24, 680, [48, 0, 0, 48]);
-  context.fill();
-
-  // Decorative subtle circle watermark in background
-  context.save();
-  context.strokeStyle = 'rgba(6, 182, 212, 0.08)';
-  context.lineWidth = 140;
-  context.beginPath();
-  context.arc(950, 550, 260, 0, Math.PI * 2);
-  context.stroke();
-  context.restore();
-
-  // Branding
-  context.fillStyle = '#22d3ee';
-  context.font = '700 28px system-ui, -apple-system, sans-serif';
-  context.fillText('QUIROPRÁCTICA', 75, 120);
-
-  context.fillStyle = '#ffffff';
-  context.font = '900 48px system-ui, -apple-system, sans-serif';
-  context.fillText('LEÓN UNIVERSAL', 75, 178);
-
-  // Patient info section
-  context.fillStyle = '#94a3b8';
-  context.font = '700 22px system-ui, -apple-system, sans-serif';
-  context.fillText('PACIENTE', 75, 305);
-
-  context.fillStyle = '#ffffff';
-  context.font = '800 42px system-ui, -apple-system, sans-serif';
-  const shortName = name.length > 25 ? `${name.slice(0, 24)}…` : name;
-  context.fillText(shortName, 75, 362);
-
-  context.fillStyle = '#94a3b8';
-  context.font = '400 23px system-ui, -apple-system, sans-serif';
-  context.fillText('Presenta esta tarjeta al llegar a consulta.', 75, 450);
-  context.fillText('Acceso rápido y seguro a tu expediente.', 75, 488);
-
-  // QR Container (clean rounded white card)
-  const qrImage = document.createElement('img');
-  qrImage.src = qrDataUrl;
-  await new Promise<void>((resolve, reject) => {
-    qrImage.onload = () => resolve();
-    qrImage.onerror = () => reject(new Error('No se pudo cargar el QR.'));
-  });
-
-  context.fillStyle = '#ffffff';
-  context.beginPath();
-  context.roundRect(660, 85, 345, 510, 32);
-  context.fill();
-
-  // Draw QR code centered in the white container
-  context.drawImage(qrImage, 695, 115, 275, 275);
-
-  context.fillStyle = '#0f172a';
-  context.font = '800 24px system-ui, -apple-system, sans-serif';
-  context.textAlign = 'center';
-  context.fillText('CÓDIGO PERSONAL', 832, 440);
-
-  context.fillStyle = '#64748b';
-  context.font = '500 20px system-ui, -apple-system, sans-serif';
-  context.fillText('Muéstralo en recepción', 832, 478);
-  context.textAlign = 'left';
-
-  return canvas.toDataURL('image/png');
-}
-
-function PatientQrCard({ name, qrValue }: { name: string; qrValue: string }) {
-  const [cardUrl, setCardUrl] = useState('');
-  const [sharing, setSharing] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    void buildPatientCard(name, qrValue).then((url) => {
-      if (active) setCardUrl(url);
-    });
-    return () => { active = false; };
-  }, [name, qrValue]);
-
-  const fileName = `tarjeta-qr-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.png`;
-
-  async function share() {
-    if (!cardUrl) return;
-    setSharing(true);
-    try {
-      const blob = await (await fetch(cardUrl)).blob();
-      const file = new File([blob], fileName, { type: 'image/png' });
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({
-          title: `Tarjeta QR de ${name}`,
-          text: 'Tarjeta de paciente de Quiropráctica León Universal.',
-          files: [file],
-        });
-      } else {
-        const link = document.createElement('a');
-        link.href = cardUrl;
-        link.download = fileName;
-        link.click();
-      }
-    } finally {
-      setSharing(false);
-    }
-  }
-
-  return (
-    <div className="mt-5 w-full">
-      <div className="mx-auto max-w-lg overflow-hidden rounded-2xl shadow-xl ring-1 ring-slate-900/10">
-        {cardUrl ? (
-          <Image
-            unoptimized
-            src={cardUrl}
-            width={1080}
-            height={680}
-            alt={`Tarjeta QR de ${name}`}
-            className="block h-auto w-full object-contain"
-          />
-        ) : (
-          <div className="grid aspect-[1080/680] place-items-center bg-slate-900 text-white">
-            <LoaderCircle className="size-8 animate-spin" />
-          </div>
-        )}
-      </div>
-      <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-3 max-w-lg mx-auto">
-        <Button
-          onClick={() => void share()}
-          disabled={!cardUrl || sharing}
-          className="h-11 w-full sm:w-auto flex-1 rounded-xl font-bold bg-cyan-700 hover:bg-cyan-800 text-white shadow-sm"
-        >
-          {sharing ? <LoaderCircle className="size-4 animate-spin mr-2" /> : <QrCode className="size-4 mr-2" />} Enviar o compartir
-        </Button>
-        {cardUrl && (
-          <a
-            href={cardUrl}
-            download={fileName}
-            className={cn(
-              buttonVariants({ variant: 'outline' }),
-              'h-11 w-full sm:w-auto flex-1 rounded-xl px-5 font-bold border-slate-200 hover:bg-slate-50',
-            )}
-          >
-            <Download className="size-4 mr-2" /> Descargar imagen
-          </a>
-        )}
-      </div>
-      <p className="mt-3 text-center text-xs text-muted-foreground">
-        Puedes enviarla por WhatsApp o imprimirla. El QR no muestra datos médicos.
-      </p>
-    </div>
-  );
-}
-
-function NewPatientDialog({ open, onOpenChange, onSaved, onFinished }: { open: boolean; onOpenChange: (open: boolean) => void; onSaved: () => void; onFinished: (patient: Patient) => void }) {
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
-  const [result, setResult] = useState<PatientQrResult | null>(null);
-  const today = new Date().toISOString().slice(0, 10);
-
-  async function submit(event: React.SyntheticEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSaving(true); setError('');
-    const form = new FormData(event.currentTarget);
-    const payload = Object.fromEntries(form.entries());
-    const response = await fetch('/api/admin/patients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...payload, totalSessions: Number(payload.totalSessions) }) });
-    const body = (await response.json()) as { error?: string; patientId?: string; firstName?: string; lastName?: string; qrValue?: string };
-    setSaving(false);
-    if (!response.ok) { setError(body.error || 'No se pudo guardar.'); return; }
-    const phone = typeof payload.phone === 'string' ? payload.phone : '';
-    const patient: Patient = {
-      id: body.patientId!,
-      name: `${body.firstName} ${body.lastName}`,
-      phone: phone || null,
-      used: 0,
-      total: Number(payload.totalSessions) || 1,
-      qrValue: body.qrValue!,
-    };
-    setResult({ firstName: body.firstName!, lastName: body.lastName!, qrValue: body.qrValue!, patient });
-    onSaved();
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={(next) => { onOpenChange(next); if (!next) { setResult(null); setError(''); } }}>
-      <DialogContent className={cn(
-        "max-h-[92vh] w-full overflow-y-auto overflow-x-hidden rounded-[1.75rem] p-6 sm:p-8",
-        result ? "sm:max-w-2xl" : "sm:max-w-2xl"
-      )}>
-        {result ? (
-          <div className="py-2 text-center flex flex-col items-center">
-            <span className="mx-auto grid size-16 place-items-center rounded-full bg-emerald-100 text-emerald-700 shadow-sm">
-              <Check className="size-8 stroke-[2.5]" />
-            </span>
-            <DialogTitle className="mt-4 text-2xl font-black text-slate-900">
-              Paciente y tarjeta creados
-            </DialogTitle>
-            <DialogDescription className="mt-2 text-base text-slate-600 max-w-md mx-auto">
-              Envía esta tarjeta a <strong className="text-slate-900">{result.firstName} {result.lastName}</strong> para que la muestre en cada visita.
-            </DialogDescription>
-            <PatientQrCard name={`${result.firstName} ${result.lastName}`} qrValue={result.qrValue} />
-            <Button
-              className="mt-6 h-12 w-full sm:w-auto min-w-[240px] rounded-xl px-6 font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20"
-              onClick={() => onFinished(result.patient)}
-            >
-              Terminar y abrir expediente <ChevronRight className="ml-1 size-4" />
-            </Button>
-          </div>
-        ) : (
-          <><DialogHeader><DialogTitle className="text-xl font-extrabold">Registrar paciente</DialogTitle><DialogDescription className="text-base">Crea su expediente, plan de sesiones, primera cita y tarjeta QR.</DialogDescription></DialogHeader><form onSubmit={submit} className="mt-2 grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label htmlFor="firstName">Nombres</Label><Input id="firstName" name="firstName" required className="h-11 rounded-xl" /></div><div className="space-y-2"><Label htmlFor="lastName">Apellidos</Label><Input id="lastName" name="lastName" required className="h-11 rounded-xl" /></div><div className="space-y-2"><Label htmlFor="phone">Teléfono</Label><Input id="phone" name="phone" inputMode="tel" className="h-11 rounded-xl" /></div><div className="space-y-2"><Label htmlFor="birthDate">Fecha de nacimiento</Label><Input id="birthDate" name="birthDate" type="date" className="h-11 rounded-xl" /></div><div className="space-y-2"><Label htmlFor="sex">Sexo</Label><Select name="sex"><SelectTrigger id="sex" className="h-11 w-full rounded-xl"><SelectValue placeholder="Seleccionar" /></SelectTrigger><SelectContent><SelectItem value="female">Femenino</SelectItem><SelectItem value="male">Masculino</SelectItem><SelectItem value="not_specified">No especificado</SelectItem></SelectContent></Select></div><div className="space-y-2"><Label htmlFor="totalSessions">Plan de sesiones</Label><Input id="totalSessions" name="totalSessions" type="number" min="1" max="99" defaultValue="8" className="h-11 rounded-xl" /></div><div className="space-y-2"><Label htmlFor="appointmentDate">Fecha de primera cita</Label><Input id="appointmentDate" name="appointmentDate" type="date" defaultValue={today} className="h-11 rounded-xl" /></div><div className="space-y-2"><Label htmlFor="appointmentTime">Hora de la cita</Label><Input id="appointmentTime" name="appointmentTime" type="time" min="08:00" max="21:00" className="h-11 rounded-xl" /></div>{error && <p className="sm:col-span-2 rounded-xl bg-red-50 p-3 text-sm font-medium text-red-800">{error}</p>}<Button type="submit" disabled={saving} className="mt-2 h-12 rounded-xl font-bold sm:col-span-2">{saving ? <LoaderCircle className="animate-spin" /> : <UserPlus />} Guardar y crear tarjeta QR</Button></form></>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 type PatientRecord = {
+  patientInfo?: {
+    id?: string;
+    name?: string;
+    dni?: string | null;
+    address?: string | null;
+    occupation?: string | null;
+    birthDate?: string | null;
+    sex?: string | null;
+    phone?: string | null;
+  } | null;
+  anamnesis?: {
+    evaluation_date?: string | null;
+    dni?: string | null;
+    age?: number | null;
+    birth_date?: string | null;
+    weight_kg?: number | null;
+    height_cm?: number | null;
+    address?: string | null;
+    occupation?: string | null;
+    main_complaint?: string | null;
+    pain_duration_hours?: string | null;
+    pain_level?: number | null;
+    general_health?: string | null;
+    sleep_hours?: string | null;
+    pregnancy_status?: string | null;
+    medications?: string | null;
+    spine_inclination?: string | null;
+    spine_rotation?: string | null;
+    spine_extension?: string | null;
+    iliac?: string | null;
+    gait_tiptoes?: string | null;
+    gait_heels?: string | null;
+    prone_position?: string | null;
+    leg_length?: string | null;
+    sacroiliac_pain?: string | null;
+    cervical_syndrome?: string | null;
+    dynamic_palpation?: string | null;
+    stronger_leg?: string | null;
+    static_palpation?: string | null;
+    muscle_tension?: string | null;
+    lumbar_scan?: string | null;
+    lumbar_hypomobility?: string | null;
+    lumbar_yes_no?: string | null;
+    thoracic_scan?: string | null;
+    thoracic_hypomobility?: string | null;
+    thoracic_listing_level?: string | null;
+    cervical_c2_c7_rotation?: string | null;
+    cervical_listing_level?: string | null;
+    cervical_series?: string | null;
+    clinical_notes?: string | null;
+  } | null;
   assessment: null | {
     reason?: string; conditions?: string; bodyAnalysis?: string; weightKg?: number;
     heightCm?: number; bmi?: number; healthyWeightMinKg?: number; healthyWeightMaxKg?: number;
@@ -1165,6 +984,171 @@ function PatientRecordPage({ patient, onBack, onDeleted, onSaved }: { patient: P
               <div className="rounded-2xl bg-cyan-50 p-4"><p className="text-xs font-semibold uppercase tracking-wider text-cyan-800">Teléfono</p><p className="mt-2 font-bold">{patient.phone || 'Sin registrar'}</p></div>
               <div className="rounded-2xl bg-emerald-50 p-4"><p className="text-xs font-semibold uppercase tracking-wider text-emerald-800">Estado</p><p className="mt-2 font-bold">Plan activo</p></div>
             </div>
+            {record?.patientInfo && (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 rounded-2xl border bg-slate-50/50 p-4 text-sm">
+                <div>
+                  <span className="text-xs text-muted-foreground font-semibold uppercase">DNI</span>
+                  <p className="font-bold text-slate-800">{record.patientInfo.dni || 'No registrado'}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground font-semibold uppercase">Dirección</span>
+                  <p className="font-bold text-slate-800">{record.patientInfo.address || 'No registrada'}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground font-semibold uppercase">Profesión</span>
+                  <p className="font-bold text-slate-800">{record.patientInfo.occupation || 'No registrada'}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground font-semibold uppercase">F. Nacimiento</span>
+                  <p className="font-bold text-slate-800">{record.patientInfo.birthDate || 'No registrada'}</p>
+                </div>
+              </div>
+            )}
+            {record?.anamnesis && (
+              <div className="space-y-4 rounded-3xl border border-cyan-200 bg-cyan-50/30 p-5">
+                <div className="flex items-center gap-3">
+                  <span className="grid size-10 place-items-center rounded-xl bg-cyan-700 text-white">
+                    <Activity className="size-5" />
+                  </span>
+                  <div>
+                    <h3 className="font-extrabold text-slate-900">Ficha de Anamnesis y Evaluación Quiropráctica</h3>
+                    <p className="text-xs text-muted-foreground">Registrada el {record.anamnesis.evaluation_date || 'primer día'}</p>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white p-4 shadow-sm border">
+                  <p className="text-xs font-bold uppercase tracking-wider text-cyan-800 mb-3">1. Anamnesis y Estado de Salud</p>
+                  <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 text-sm">
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Queja Principal</span>
+                      <strong className="text-slate-900">{record.anamnesis.main_complaint || 'No indicada'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Duración del Dolor</span>
+                      <strong className="text-slate-900">{record.anamnesis.pain_duration_hours ? `${record.anamnesis.pain_duration_hours} hrs` : 'No indicada'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Escala de Dolor (1 a 10)</span>
+                      <Badge className={cn('mt-0.5 text-xs font-bold', (record.anamnesis.pain_level ?? 0) >= 7 ? 'bg-red-500' : (record.anamnesis.pain_level ?? 0) >= 4 ? 'bg-amber-500' : 'bg-emerald-600')}>
+                        {record.anamnesis.pain_level ?? '-'}/10
+                      </Badge>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Estado de Salud General</span>
+                      <strong className="text-slate-900">{record.anamnesis.general_health || 'No indicado'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Horas de Sueño</span>
+                      <strong className="text-slate-900">{record.anamnesis.sleep_hours ? `${record.anamnesis.sleep_hours} hrs` : 'No indicado'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Embarazo</span>
+                      <strong className="text-slate-900">{record.anamnesis.pregnancy_status || 'No'}</strong>
+                    </div>
+                    <div className="sm:col-span-2 md:col-span-3">
+                      <span className="text-xs text-muted-foreground block">Medicamento que toma</span>
+                      <strong className="text-slate-900">{record.anamnesis.medications || 'Ninguno reportado'}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white p-4 shadow-sm border">
+                  <p className="text-xs font-bold uppercase tracking-wider text-cyan-800 mb-3">Evaluación de la Columna Vertebral</p>
+                  <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 text-sm">
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Inclinación</span>
+                      <strong className="text-slate-900">{record.anamnesis.spine_inclination || 'Normal'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Rotación</span>
+                      <strong className="text-slate-900">{record.anamnesis.spine_rotation || 'Normal'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Extensión</span>
+                      <strong className="text-slate-900">{record.anamnesis.spine_extension || 'Normal'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Ilíaco</span>
+                      <strong className="text-slate-900">{record.anamnesis.iliac || 'Normal'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Marcha de Puntas</span>
+                      <strong className="text-slate-900">{record.anamnesis.gait_tiptoes || 'Normal'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Marcha de Talones</span>
+                      <strong className="text-slate-900">{record.anamnesis.gait_heels || 'Normal'}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white p-4 shadow-sm border">
+                  <p className="text-xs font-bold uppercase tracking-wider text-cyan-800 mb-3">2. Evaluación Postural y Palpación</p>
+                  <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 text-sm">
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Posición Prono</span>
+                      <strong className="text-slate-900">{record.anamnesis.prone_position || 'Normal'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Largo de Piernas</span>
+                      <strong className="text-slate-900">{record.anamnesis.leg_length || 'Iguales'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Dolor Sacro Ilíaco</span>
+                      <strong className="text-slate-900">{record.anamnesis.sacroiliac_pain || 'No'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Síndrome Cervical</span>
+                      <strong className="text-slate-900">{record.anamnesis.cervical_syndrome || 'No'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Palpación Dinámica</span>
+                      <strong className="text-slate-900">{record.anamnesis.dynamic_palpation || 'Normal'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Pierna más resistente</span>
+                      <strong className="text-slate-900">{record.anamnesis.stronger_leg || 'Simétrica'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Palpación Estática</span>
+                      <strong className="text-slate-900">{record.anamnesis.static_palpation || 'Normal'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Tensión muscular / Sensibilidad</span>
+                      <strong className="text-slate-900">{record.anamnesis.muscle_tension || 'Sin hallazgos'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Escaneo Lumbar</span>
+                      <strong className="text-slate-900">{record.anamnesis.lumbar_hypomobility || record.anamnesis.lumbar_scan || 'Sin hallazgos'}</strong>
+                    </div>
+                    <div className="sm:col-span-2 md:col-span-3">
+                      <span className="text-xs text-muted-foreground block">Escaneo Torácico</span>
+                      <strong className="text-slate-900">{record.anamnesis.thoracic_scan || record.anamnesis.thoracic_hypomobility || 'Sin hallazgos'}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white p-4 shadow-sm border">
+                  <p className="text-xs font-bold uppercase tracking-wider text-cyan-800 mb-3">3. Evaluación Cervical y Hallazgos</p>
+                  <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 text-sm">
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Cervical (C2 / C7 Rotación)</span>
+                      <strong className="text-slate-900">{record.anamnesis.cervical_c2_c7_rotation || 'Normal'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground block">Nivel Listado (Serie 1 al 7)</span>
+                      <strong className="text-slate-900">{record.anamnesis.cervical_series || record.anamnesis.cervical_listing_level || 'Normal'}</strong>
+                    </div>
+                    {record.anamnesis.clinical_notes && (
+                      <div className="sm:col-span-2 md:col-span-3">
+                        <span className="text-xs text-muted-foreground block">Notas Clínicas Adicionales</span>
+                        <p className="text-slate-800 font-medium">{record.anamnesis.clinical_notes}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
             <div>
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">Progreso del plan</span><strong>{Math.max(0, patient.total - patient.used)} restantes</strong></div>
               <Progress value={patient.total ? (patient.used / patient.total) * 100 : 0} className="mt-2" />

@@ -113,8 +113,55 @@ export async function ensureDbInitialized(db = env.DB) {
         method text,
         notes text,
         paid_at text NOT NULL
+      )`),
+      db.prepare(`CREATE TABLE IF NOT EXISTS patient_anamnesis (
+        id text PRIMARY KEY NOT NULL,
+        patient_id text NOT NULL,
+        evaluation_date text NOT NULL,
+        dni text,
+        age integer,
+        birth_date text,
+        weight_kg real,
+        height_cm real,
+        address text,
+        occupation text,
+        main_complaint text,
+        pain_duration_hours text,
+        pain_level integer,
+        general_health text,
+        sleep_hours text,
+        pregnancy_status text,
+        medications text,
+        spine_inclination text,
+        spine_rotation text,
+        spine_extension text,
+        iliac text,
+        gait_tiptoes text,
+        gait_heels text,
+        prone_position text,
+        leg_length text,
+        sacroiliac_pain text,
+        cervical_syndrome text,
+        dynamic_palpation text,
+        stronger_leg text,
+        static_palpation text,
+        muscle_tension text,
+        lumbar_scan text,
+        lumbar_hypomobility text,
+        lumbar_yes_no text,
+        thoracic_scan text,
+        thoracic_hypomobility text,
+        thoracic_listing_level text,
+        cervical_c2_c7_rotation text,
+        cervical_listing_level text,
+        cervical_series text,
+        clinical_notes text,
+        created_at text NOT NULL
       )`)
     ]);
+    try { await db.prepare('ALTER TABLE patients ADD COLUMN dni text').run(); } catch {}
+    try { await db.prepare('ALTER TABLE patients ADD COLUMN address text').run(); } catch {}
+    try { await db.prepare('ALTER TABLE patients ADD COLUMN occupation text').run(); } catch {}
     initDone = true;
   } catch (err) {
     console.warn('ensureDbInitialized error:', err);
