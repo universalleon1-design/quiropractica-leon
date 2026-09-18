@@ -62,9 +62,14 @@ export async function POST(request: Request) {
     cervicalSeries?: string;
     clinicalNotes?: string;
     totalSessions?: number;
+    sessionsPerWeek?: number;
     appointmentDate?: string;
     appointmentTime?: string;
     evaluationDate?: string;
+    totalAmount?: number;
+    initialPayment?: number;
+    paymentMethod?: string;
+    paymentNotes?: string;
   };
 
   const firstName = body.firstName?.trim();
@@ -161,15 +166,40 @@ export async function POST(request: Request) {
       ),
       env.DB.prepare(
         `INSERT INTO session_packages
-         (id, patient_id, total_sessions, used_sessions, created_at)
-         VALUES (?, ?, ?, 0, ?)`,
-      ).bind(makeId('package'), patientId, totalSessions, now),
+         (id, patient_id, total_sessions, used_sessions, sessions_per_week, start_date, total_amount_cents, created_at)
+         VALUES (?, ?, ?, 0, ?, ?, ?, ?)`,
+      ).bind(
+        makeId('package'),
+        patientId,
+        totalSessions,
+        Math.max(1, Math.min(7, Number(body.sessionsPerWeek) || 1)),
+        appointmentDate,
+        Math.round((Number(body.totalAmount) || 0) * 100),
+        now,
+      ),
       env.DB.prepare(
         `INSERT INTO audit_logs
          (id, actor_id, action, entity_type, entity_id, created_at)
          VALUES (?, ?, 'patient.created', 'patient', ?, ?)`,
       ).bind(makeId('audit'), user.userId, patientId, now),
     ];
+
+    if (Number(body.initialPayment) > 0) {
+      statements.push(
+        env.DB.prepare(
+          `INSERT INTO payments
+           (id, patient_id, amount_cents, method, notes, paid_at)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+        ).bind(
+          makeId('payment'),
+          patientId,
+          Math.round(Number(body.initialPayment) * 100),
+          body.paymentMethod || 'Efectivo',
+          body.paymentNotes?.trim() || 'Abono inicial al registrar paciente',
+          now,
+        ),
+      );
+    }
 
     if (weight || height || body.mainComplaint) {
       statements.push(

@@ -1,12 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Activity,
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
+  Banknote,
   Check,
+  CreditCard,
   HeartPulse,
   Info,
   LoaderCircle,
@@ -16,6 +18,7 @@ import {
   Sparkles,
   User,
   UserPlus,
+  WalletCards,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -60,6 +63,25 @@ export function NewPatientPageView({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<PatientQrResult | null>(null);
+
+  const formTopRef = useRef<HTMLDivElement>(null);
+
+  function changeStep(nextStep: 1 | 2 | 3) {
+    setStep(nextStep);
+    try {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
+      document.body.scrollTo({ top: 0, behavior: 'smooth' });
+      formTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch {}
+  }
+
+  useEffect(() => {
+    try {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      formTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch {}
+  }, [step]);
 
   // Pagina 1: Anamnesis y Evaluacion
   const [evaluationDate, setEvaluationDate] = useState(today);
@@ -111,14 +133,19 @@ export function NewPatientPageView({
   const [thoracicHypomobility, setThoracicHypomobility] = useState('');
   const [thoracicListingLevel, setThoracicListingLevel] = useState('');
 
-  // Pagina 3: Cervical y Citas
+  // Pagina 3: Cervical, Citas y Pagos
   const [cervicalC2C7Rotation, setCervicalC2C7Rotation] = useState('C2 Rotación D / C7 Rotación I');
   const [cervicalListingLevel, setCervicalListingLevel] = useState('C2');
   const [cervicalSeries, setCervicalSeries] = useState('Serie 1 al 7');
   const [clinicalNotes, setClinicalNotes] = useState('');
   const [totalSessions, setTotalSessions] = useState('8');
+  const [sessionsPerWeek, setSessionsPerWeek] = useState('2');
   const [appointmentDate, setAppointmentDate] = useState(today);
   const [appointmentTime, setAppointmentTime] = useState('09:00');
+  const [totalAmount, setTotalAmount] = useState('800');
+  const [initialPayment, setInitialPayment] = useState('200');
+  const [paymentMethod, setPaymentMethod] = useState('Efectivo');
+  const [paymentNotes, setPaymentNotes] = useState('');
 
   function handleBirthDate(val: string) {
     setBirthDate(val);
@@ -188,11 +215,15 @@ export function NewPatientPageView({
       ? Number((recommendedSleepMin - parsedSleepHours).toFixed(1))
       : 0;
 
+  const totalAmountNum = parseFloat(totalAmount) || 0;
+  const initialPaymentNum = parseFloat(initialPayment) || 0;
+  const pendingBalanceNum = Math.max(0, totalAmountNum - initialPaymentNum);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!firstName.trim() || !lastName.trim()) {
       setError('Por favor ingresa al menos los nombres y apellidos del paciente.');
-      setStep(1);
+      changeStep(1);
       return;
     }
 
@@ -244,8 +275,13 @@ export function NewPatientPageView({
       cervicalSeries: cervicalSeries.trim(),
       clinicalNotes: clinicalNotes.trim(),
       totalSessions: Number(totalSessions) || 8,
+      sessionsPerWeek: Number(sessionsPerWeek) || 2,
       appointmentDate,
       appointmentTime,
+      totalAmount: totalAmountNum,
+      initialPayment: initialPaymentNum,
+      paymentMethod,
+      paymentNotes: paymentNotes.trim(),
     };
 
     try {
@@ -356,14 +392,14 @@ export function NewPatientPageView({
   }
 
   return (
-    <div className="space-y-6">
+    <div ref={formTopRef} className="space-y-6 scroll-mt-20">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-3xl font-black tracking-tight text-slate-950">
             Registrar Paciente
           </h2>
           <p className="text-muted-foreground">
-            Ficha de anamnesis quiropráctica, evaluación postural y tarjeta QR.
+            Ficha de anamnesis quiropráctica, evaluación postural, plan de pagos y tarjeta QR.
           </p>
         </div>
       </div>
@@ -372,12 +408,12 @@ export function NewPatientPageView({
         {[
           { num: 1, title: 'Página 1', subtitle: 'Anamnesis y Columna' },
           { num: 2, title: 'Página 2', subtitle: 'Postura y Palpación' },
-          { num: 3, title: 'Página 3', subtitle: 'Cervical y Plan' },
+          { num: 3, title: 'Página 3', subtitle: 'Cervical, Plan y Pago' },
         ].map((item) => (
           <button
             key={item.num}
             type="button"
-            onClick={() => setStep(item.num as 1 | 2 | 3)}
+            onClick={() => changeStep(item.num as 1 | 2 | 3)}
             className={cn(
               'flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 rounded-2xl p-3 sm:p-4 text-left transition border',
               step === item.num
@@ -1246,7 +1282,7 @@ export function NewPatientPageView({
                       return;
                     }
                     setError('');
-                    setStep(2);
+                    changeStep(2);
                   }}
                   className="h-12 px-7 rounded-xl font-bold bg-cyan-700 hover:bg-cyan-800 text-white shadow-md"
                 >
@@ -1280,10 +1316,10 @@ export function NewPatientPageView({
                 </h3>
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="prone">POSICIÓN PRONO</Label>
+                    <Label htmlFor="pronePos">POSICIÓN PRONO</Label>
                     <Input
-                      id="prone"
-                      placeholder="Observaciones posturales en camilla prono..."
+                      id="pronePos"
+                      placeholder="Observaciones en prono (simetría, inclinación...)"
                       value={pronePosition}
                       onChange={(e) => setPronePosition(e.target.value)}
                       className="h-11 rounded-xl"
@@ -1291,7 +1327,7 @@ export function NewPatientPageView({
                   </div>
 
                   <div className="space-y-2">
-                    <Label>LARGO DE LAS PIERNAS (Diferencia)</Label>
+                    <Label>LARGO DE LAS PIERNAS: DERECHA / IZQUIERDA</Label>
                     <div className="flex gap-2">
                       {(['Derecha', 'Izquierda', 'Iguales'] as const).map((side) => (
                         <button
@@ -1300,7 +1336,9 @@ export function NewPatientPageView({
                           onClick={() => setLegLengthSide(side)}
                           className={cn(
                             'h-11 flex-1 rounded-xl text-xs sm:text-sm font-bold border transition',
-                            legLengthSide === side ? 'bg-cyan-700 text-white border-cyan-700 shadow-sm' : 'bg-white hover:bg-slate-50'
+                            legLengthSide === side
+                              ? 'bg-cyan-700 text-white border-cyan-700 shadow-sm'
+                              : 'bg-white hover:bg-slate-50 text-slate-700'
                           )}
                         >
                           {side}
@@ -1309,39 +1347,38 @@ export function NewPatientPageView({
                     </div>
                     {legLengthSide !== 'Iguales' && (
                       <Input
-                        placeholder="Diferencia en cm / mm (ej. 1.5 cm más corta)"
+                        placeholder="Diferencia aprox. (ej. Corta 1 cm, Corta 5 mm)"
                         value={legLengthDiff}
                         onChange={(e) => setLegLengthDiff(e.target.value)}
-                        className="h-11 rounded-xl mt-2"
+                        className="h-10 rounded-xl mt-2"
                       />
                     )}
                   </div>
 
                   <div className="space-y-2">
                     <Label>SACRO ILÍACO DOLOR: ( SI ) / ( NO )</Label>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setSacroiliacPain('SI')}
-                        className={cn(
-                          'h-11 px-6 rounded-xl text-sm font-bold border transition',
-                          sacroiliacPain === 'SI' ? 'bg-red-600 text-white border-red-600 shadow-sm' : 'bg-white hover:bg-slate-50'
-                        )}
-                      >
-                        SI
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setSacroiliacPain('NO')}
-                        className={cn(
-                          'h-11 px-6 rounded-xl text-sm font-bold border transition',
-                          sacroiliacPain === 'NO' ? 'bg-slate-900 text-white border-slate-900 shadow-sm' : 'bg-white hover:bg-slate-50'
-                        )}
-                      >
-                        NO
-                      </button>
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        {(['SI', 'NO'] as const).map((opt) => (
+                          <button
+                            key={opt}
+                            type="button"
+                            onClick={() => setSacroiliacPain(opt)}
+                            className={cn(
+                              'h-11 flex-1 rounded-xl text-sm font-black border transition',
+                              sacroiliacPain === opt
+                                ? opt === 'SI'
+                                  ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
+                                  : 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                                : 'bg-white hover:bg-slate-50 text-slate-700'
+                            )}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
                       {sacroiliacPain === 'SI' && (
-                        <div className="flex flex-1 gap-1">
+                        <div className="flex gap-2 pt-1">
                           {(['Derecho', 'Izquierdo', 'Bilateral'] as const).map((side) => (
                             <button
                               key={side}
@@ -1523,17 +1560,17 @@ export function NewPatientPageView({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setStep(1)}
+                  onClick={() => changeStep(1)}
                   className="h-12 px-6 rounded-xl font-bold border-slate-300 hover:bg-slate-100"
                 >
                   <ArrowLeft className="mr-2 size-4" /> Anterior: Página 1
                 </Button>
                 <Button
                   type="button"
-                  onClick={() => setStep(3)}
+                  onClick={() => changeStep(3)}
                   className="h-12 px-7 rounded-xl font-bold bg-cyan-700 hover:bg-cyan-800 text-white shadow-md"
                 >
-                  Continuar a Página 3: Cervical y Plan <ArrowRight className="ml-2 size-4" />
+                  Continuar a Página 3: Cervical, Plan y Pago <ArrowRight className="ml-2 size-4" />
                 </Button>
               </div>
             </CardContent>
@@ -1620,25 +1657,37 @@ export function NewPatientPageView({
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 space-y-5">
-                <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-900">
-                  Plan de Tratamiento y Primera Cita
-                </h3>
+              <div className="rounded-2xl border-2 border-emerald-100 bg-emerald-50/40 p-5 sm:p-6 space-y-5">
+                <div className="flex items-center gap-2.5">
+                  <span className="grid size-10 place-items-center rounded-xl bg-emerald-700 text-white shadow-sm">
+                    <WalletCards className="size-5" />
+                  </span>
+                  <div>
+                    <h3 className="font-extrabold text-base text-emerald-950">
+                      Plan de Tratamiento, Sesiones y Pago
+                    </h3>
+                    <p className="text-xs text-muted-foreground">
+                      Define las sesiones pactadas, frecuencia, costo del plan y abono inicial en caja.
+                    </p>
+                  </div>
+                </div>
 
-                <div className="grid gap-5 sm:grid-cols-3">
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                   <div className="space-y-2">
-                    <Label htmlFor="totSessions">PLAN DE SESIONES</Label>
-                    <div className="flex gap-2">
+                    <Label htmlFor="totSessions" className="font-bold text-xs uppercase tracking-wider text-slate-700">
+                      PLAN DE SESIONES
+                    </Label>
+                    <div className="flex gap-1.5">
                       {['6', '8', '10', '12'].map((num) => (
                         <button
                           key={num}
                           type="button"
                           onClick={() => setTotalSessions(num)}
                           className={cn(
-                            'h-11 flex-1 rounded-xl text-sm font-black border transition',
+                            'h-10 flex-1 rounded-xl text-xs font-black border transition',
                             totalSessions === num
-                              ? 'bg-cyan-700 text-white border-cyan-700 shadow-sm'
-                              : 'bg-muted/40 hover:bg-muted'
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                              : 'bg-white hover:bg-slate-100 text-slate-700'
                           )}
                         >
                           {num}
@@ -1653,29 +1702,225 @@ export function NewPatientPageView({
                       placeholder="Otro número"
                       value={totalSessions}
                       onChange={(e) => setTotalSessions(e.target.value)}
-                      className="h-10 rounded-xl mt-2"
+                      className="h-10 rounded-xl bg-white"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="appDate">FECHA DE PRIMERA CITA</Label>
+                    <Label htmlFor="sessPerWeek" className="font-bold text-xs uppercase tracking-wider text-slate-700">
+                      FRECUENCIA SEMANAL
+                    </Label>
+                    <div className="flex gap-1.5">
+                      {['1', '2', '3'].map((freq) => (
+                        <button
+                          key={freq}
+                          type="button"
+                          onClick={() => setSessionsPerWeek(freq)}
+                          className={cn(
+                            'h-10 flex-1 rounded-xl text-xs font-black border transition',
+                            sessionsPerWeek === freq
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                              : 'bg-white hover:bg-slate-100 text-slate-700'
+                          )}
+                        >
+                          {freq}x sem
+                        </button>
+                      ))}
+                    </div>
+                    <Input
+                      id="sessPerWeek"
+                      type="number"
+                      min="1"
+                      max="7"
+                      placeholder="Otra frec."
+                      value={sessionsPerWeek}
+                      onChange={(e) => setSessionsPerWeek(e.target.value)}
+                      className="h-10 rounded-xl bg-white"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="appDate" className="font-bold text-xs uppercase tracking-wider text-slate-700">
+                      FECHA PRIMERA CITA
+                    </Label>
                     <Input
                       id="appDate"
                       type="date"
                       value={appointmentDate}
                       onChange={(e) => setAppointmentDate(e.target.value)}
-                      className="h-11 rounded-xl"
+                      className="h-10 rounded-xl bg-white"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="appTime">HORA DE LA CITA</Label>
+                    <Label htmlFor="appTime" className="font-bold text-xs uppercase tracking-wider text-slate-700">
+                      HORA DE LA CITA
+                    </Label>
                     <Input
                       id="appTime"
                       type="time"
                       value={appointmentTime}
                       onChange={(e) => setAppointmentTime(e.target.value)}
-                      className="h-11 rounded-xl"
+                      className="h-10 rounded-xl bg-white"
+                    />
+                  </div>
+                </div>
+
+                {/* Bloque Financiero y Pagos */}
+                <div className="rounded-2xl bg-white p-5 border border-emerald-200 space-y-4 shadow-xs">
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="totAmount" className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+                        <Banknote className="size-4 text-emerald-700" />
+                        MONTO TOTAL DEL PLAN (S/)
+                      </Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 font-bold text-slate-500 text-sm">S/</span>
+                        <Input
+                          id="totAmount"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="Ej. 800.00"
+                          value={totalAmount}
+                          onChange={(e) => setTotalAmount(e.target.value)}
+                          className="h-11 pl-9 rounded-xl font-bold text-base"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="initPayment" className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+                          <CreditCard className="size-4 text-emerald-700" />
+                          ABONO O PAGO INICIAL (S/)
+                        </Label>
+                        <span className="text-[11px] text-muted-foreground">Opcional</span>
+                      </div>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 font-bold text-slate-500 text-sm">S/</span>
+                        <Input
+                          id="initPayment"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="Ej. 200.00"
+                          value={initialPayment}
+                          onChange={(e) => setInitialPayment(e.target.value)}
+                          className="h-11 pl-9 rounded-xl font-bold text-base"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="payMethod" className="font-bold text-xs text-slate-800">
+                        FORMA DE PAGO DEL ABONO
+                      </Label>
+                      <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                        <SelectTrigger id="payMethod" className="h-11 rounded-xl bg-white font-semibold">
+                          <SelectValue placeholder="Forma de pago" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Efectivo">💵 Efectivo</SelectItem>
+                          <SelectItem value="Yape">📱 Yape</SelectItem>
+                          <SelectItem value="Plin">📱 Plin</SelectItem>
+                          <SelectItem value="Transferencia">🏦 Transferencia Bancaria</SelectItem>
+                          <SelectItem value="Tarjeta">💳 Tarjeta de Débito / Crédito</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Atajos de pago rápido */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <span className="text-xs font-semibold text-slate-500">Atajos de pago:</span>
+                    <button
+                      type="button"
+                      onClick={() => setInitialPayment('0')}
+                      className={cn(
+                        'text-xs px-2.5 py-1 rounded-lg border font-bold transition',
+                        initialPaymentNum === 0 ? 'bg-slate-900 text-white' : 'bg-slate-50 hover:bg-slate-100 text-slate-700'
+                      )}
+                    >
+                      Sin abono hoy (S/ 0)
+                    </button>
+                    {totalAmountNum > 0 && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setInitialPayment((totalAmountNum * 0.5).toFixed(2))}
+                          className={cn(
+                            'text-xs px-2.5 py-1 rounded-lg border font-bold transition',
+                            initialPaymentNum === Number((totalAmountNum * 0.5).toFixed(2))
+                              ? 'bg-cyan-700 text-white'
+                              : 'bg-slate-50 hover:bg-slate-100 text-slate-700'
+                          )}
+                        >
+                          50% de inicial (S/ {(totalAmountNum * 0.5).toFixed(2)})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setInitialPayment(totalAmountNum.toFixed(2))}
+                          className={cn(
+                            'text-xs px-2.5 py-1 rounded-lg border font-bold transition',
+                            initialPaymentNum === totalAmountNum
+                              ? 'bg-emerald-700 text-white'
+                              : 'bg-slate-50 hover:bg-slate-100 text-slate-700'
+                          )}
+                        >
+                          Pago completo 100% (S/ {totalAmountNum.toFixed(2)})
+                        </button>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Resumen financiero */}
+                  <div className="grid gap-3 sm:grid-cols-3 pt-2">
+                    <div className="rounded-xl bg-slate-50 p-3 border">
+                      <span className="text-xs text-muted-foreground block">Monto Total del Plan</span>
+                      <strong className="text-lg font-black text-slate-900">
+                        S/ {totalAmountNum.toFixed(2)}
+                      </strong>
+                    </div>
+                    <div className="rounded-xl bg-emerald-50 p-3 border border-emerald-200">
+                      <span className="text-xs text-emerald-800 font-semibold block">Abono Inicial en Caja</span>
+                      <strong className="text-lg font-black text-emerald-900">
+                        S/ {initialPaymentNum.toFixed(2)}
+                      </strong>
+                      <span className="text-[11px] text-emerald-700 block mt-0.5">
+                        Vía {paymentMethod}
+                      </span>
+                    </div>
+                    <div className={cn(
+                      'rounded-xl p-3 border',
+                      pendingBalanceNum === 0 && totalAmountNum > 0
+                        ? 'bg-emerald-100/70 border-emerald-300 text-emerald-950'
+                        : 'bg-amber-50 border-amber-200 text-amber-950'
+                    )}>
+                      <span className="text-xs font-semibold block opacity-80">Saldo Pendiente por Cobrar</span>
+                      <strong className="text-lg font-black block">
+                        S/ {pendingBalanceNum.toFixed(2)}
+                      </strong>
+                      <span className="text-[11px] opacity-80 block mt-0.5">
+                        {pendingBalanceNum === 0 && totalAmountNum > 0
+                          ? '✅ Pagado en su totalidad'
+                          : pendingBalanceNum > 0
+                          ? 'Se amortizará en las próximas visitas'
+                          : 'Sin monto fijado'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="payNotes" className="text-xs font-medium text-muted-foreground">
+                      Nro. de Operación / Observaciones de Pago (opcional)
+                    </Label>
+                    <Input
+                      id="payNotes"
+                      placeholder="Ej. Operación Yape #39281, pago en efectivo recepción..."
+                      value={paymentNotes}
+                      onChange={(e) => setPaymentNotes(e.target.value)}
+                      className="h-10 rounded-xl bg-white text-xs"
                     />
                   </div>
                 </div>
@@ -1691,7 +1936,7 @@ export function NewPatientPageView({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setStep(2)}
+                  onClick={() => changeStep(2)}
                   className="h-12 w-full sm:w-auto px-6 rounded-xl font-bold border-slate-300 hover:bg-slate-100"
                 >
                   <ArrowLeft className="mr-2 size-4" /> Anterior: Página 2

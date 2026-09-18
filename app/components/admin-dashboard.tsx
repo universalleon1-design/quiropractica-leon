@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
   ArrowLeft,
+  Bell,
+  BellRing,
   Camera,
   CalendarDays,
   Check,
@@ -26,7 +28,10 @@ import {
   Trash2,
   UserPlus,
   Users,
+  Volume2,
+  VolumeX,
   WalletCards,
+  X,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -133,16 +138,123 @@ const statusLabels: Record<string, { label: string; className: string }> = {
   no_show: { label: 'No asistió', className: 'bg-orange-100 text-orange-800' },
 };
 
+function playAlarmChime() {
+  try {
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    const now = ctx.currentTime;
+
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(659.25, now);
+    osc1.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+    gain1.gain.setValueAtTime(0.25, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.5);
+
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(880, now + 0.18);
+    osc2.frequency.exponentialRampToValueAtTime(1174.66, now + 0.35);
+    gain2.gain.setValueAtTime(0.2, now + 0.18);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.18);
+    osc2.stop(now + 0.8);
+  } catch {}
+}
+
 export function AdminDashboard({ user }: { user: { name: string; email: string } }) {
   const [view, setView] = useState<View>('scanner');
   const [data, setData] = useState<DashboardData | null>(null);
   const [patientOpen, setPatientOpen] = useState<Patient | null>(null);
   const [supplementOpen, setSupplementOpen] = useState(false);
+  const [alarmsOpen, setAlarmsOpen] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [notifPermission, setNotifPermission] = useState<string>('default');
+  const [dismissedAlarms, setDismissedAlarms] = useState<Record<string, boolean>>({});
+  const [nowDate, setNowDate] = useState(new Date());
 
   async function refresh() {
     const response = await fetch('/api/admin/dashboard');
     if (response.ok) setData((await response.json()) as DashboardData);
   }
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotifPermission(Notification.permission);
+    }
+    const timer = setInterval(() => {
+      setNowDate(new Date());
+    }, 20000);
+    return () => clearInterval(timer);
+  }, []);
+
+  async function requestNotificationPermission() {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      const perm = await Notification.requestPermission();
+      setNotifPermission(perm);
+      if (perm === 'granted') {
+        new Notification('Quiropraxia León Universal', {
+          body: '¡Alarmas activadas! Te avisaremos cuando una cita esté próxima.',
+        });
+      }
+    }
+  }
+
+  const upcomingAppointments = useMemo(() => {
+    if (!data?.schedule) return [];
+    return data.schedule
+      .map((item) => {
+        const [h, m] = item.time.split(':').map(Number);
+        if (isNaN(h) || isNaN(m)) return null;
+        const appDate = new Date();
+        appDate.setHours(h, m, 0, 0);
+        const diffMinutes = Math.round((appDate.getTime() - nowDate.getTime()) / 60000);
+        return {
+          ...item,
+          diffMinutes,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null)
+      .sort((a, b) => a.diffMinutes - b.diffMinutes);
+  }, [data?.schedule, nowDate]);
+
+  const activeAlerts = useMemo(() => {
+    return upcomingAppointments.filter(
+      (item) =>
+        item.status === 'scheduled' &&
+        item.diffMinutes >= -15 &&
+        item.diffMinutes <= 25 &&
+        !dismissedAlarms[item.id]
+    );
+  }, [upcomingAppointments, dismissedAlarms]);
+
+  const alertedIdsRef = useRef<Record<string, boolean>>({});
+  useEffect(() => {
+    for (const alert of activeAlerts) {
+      if (!alertedIdsRef.current[alert.id]) {
+        alertedIdsRef.current[alert.id] = true;
+        if (soundEnabled) {
+          playAlarmChime();
+        }
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+          new Notification(`Cita próxima: ${alert.name}`, {
+            body: `Cita a las ${alert.time} (${alert.diffMinutes <= 0 ? '¡Es la hora de atención!' : `en ${alert.diffMinutes} min`}).`,
+          });
+        }
+      }
+    }
+  }, [activeAlerts, soundEnabled]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -244,14 +356,90 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
               <h1 className="text-xl font-black tracking-tight">{patientOpen ? patientOpen.name : title}</h1>
             </div>
           </div>
-          {view !== 'scanner' && view !== 'new-patient' && !patientOpen && (
-            <Button onClick={() => setView('new-patient')} className="h-11 rounded-xl px-4 font-bold">
-              <UserPlus className="size-4" />
-              <span className="hidden sm:inline">Nuevo paciente</span>
-              <span className="sm:hidden">Nuevo</span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAlarmsOpen(true)}
+              className={cn(
+                'relative h-10 rounded-xl px-3 font-bold text-xs transition border',
+                activeAlerts.length > 0
+                  ? 'border-amber-400 bg-amber-50 text-amber-950 hover:bg-amber-100 shadow-xs'
+                  : 'border-border hover:bg-slate-100 text-slate-700'
+              )}
+            >
+              {activeAlerts.length > 0 ? (
+                <BellRing className="size-4 text-amber-600 animate-bounce" />
+              ) : (
+                <Bell className="size-4 text-cyan-800" />
+              )}
+              <span className="hidden sm:inline ml-1.5">Alarmas</span>
+              {upcomingAppointments.filter((i) => i.status === 'scheduled').length > 0 && (
+                <span
+                  className={cn(
+                    'ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-black',
+                    activeAlerts.length > 0
+                      ? 'bg-rose-600 text-white animate-pulse'
+                      : 'bg-slate-900 text-white'
+                  )}
+                >
+                  {activeAlerts.length > 0
+                    ? activeAlerts.length
+                    : upcomingAppointments.filter((i) => i.status === 'scheduled').length}
+                </span>
+              )}
             </Button>
-          )}
+
+            {view !== 'scanner' && view !== 'new-patient' && !patientOpen && (
+              <Button onClick={() => setView('new-patient')} className="h-10 sm:h-11 rounded-xl px-4 font-bold">
+                <UserPlus className="size-4" />
+                <span className="hidden sm:inline">Nuevo paciente</span>
+                <span className="sm:hidden">Nuevo</span>
+              </Button>
+            )}
+          </div>
         </header>
+
+        {activeAlerts.length > 0 && (
+          <div className="bg-amber-500 text-slate-950 px-4 py-2.5 sm:px-7 flex flex-wrap items-center justify-between gap-2 shadow-sm border-b border-amber-600 animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-black">
+              <BellRing className="size-4 animate-bounce shrink-0" />
+              <span>
+                ¡Alarma de Cita Hoy! {activeAlerts[0].name} tiene cita a las{' '}
+                <u className="font-extrabold">{activeAlerts[0].time}</u>{' '}
+                ({activeAlerts[0].diffMinutes <= 0 ? '¡Es la hora de atención!' : `falta ${activeAlerts[0].diffMinutes} min`}).
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setPatientOpen({
+                    id: activeAlerts[0].patientId,
+                    name: activeAlerts[0].name,
+                    phone: null,
+                    used: activeAlerts[0].used,
+                    total: activeAlerts[0].total,
+                  });
+                }}
+                className="h-8 bg-white text-slate-900 border-none font-bold text-xs hover:bg-white/90 rounded-lg"
+              >
+                Ver Expediente
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() =>
+                  setDismissedAlarms((prev) => ({ ...prev, [activeAlerts[0].id]: true }))
+                }
+                className="h-8 text-xs font-bold text-slate-900 hover:bg-amber-600/30 rounded-lg px-2"
+              >
+                <X className="size-3.5 mr-1" /> Silenciar
+              </Button>
+            </div>
+          </div>
+        )}
 
         <div className="mx-auto w-full max-w-[1240px] p-4 sm:p-7">
           {!data ? (
@@ -339,7 +527,202 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
         open={supplementOpen}
         onOpenChange={setSupplementOpen}
       />
+
+      <AlarmsDialog
+        open={alarmsOpen}
+        onOpenChange={setAlarmsOpen}
+        appointments={upcomingAppointments}
+        soundEnabled={soundEnabled}
+        onToggleSound={() => setSoundEnabled((prev) => !prev)}
+        onTestSound={playAlarmChime}
+        notifPermission={notifPermission}
+        onRequestNotif={requestNotificationPermission}
+        onSelectPatient={(item) => {
+          setPatientOpen({
+            id: item.patientId,
+            name: item.name,
+            phone: null,
+            used: item.used,
+            total: item.total,
+          });
+        }}
+      />
     </SidebarProvider>
+  );
+}
+
+function AlarmsDialog({
+  open,
+  onOpenChange,
+  appointments,
+  soundEnabled,
+  onToggleSound,
+  onTestSound,
+  notifPermission,
+  onRequestNotif,
+  onSelectPatient,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  appointments: (ScheduleItem & { diffMinutes: number })[];
+  soundEnabled: boolean;
+  onToggleSound: () => void;
+  onTestSound: () => void;
+  notifPermission: string;
+  onRequestNotif: () => void;
+  onSelectPatient: (item: ScheduleItem) => void;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg rounded-[1.75rem] p-6 sm:p-7">
+        <DialogHeader>
+          <div className="flex items-center gap-2.5">
+            <span className="grid size-10 place-items-center rounded-xl bg-cyan-100 text-cyan-900">
+              <BellRing className="size-5 text-cyan-800" />
+            </span>
+            <div>
+              <DialogTitle className="text-xl font-black text-slate-950">Alarmas y Citas de Hoy</DialogTitle>
+              <DialogDescription>
+                Alertas sonoras y avisos de llegada de pacientes programados para hoy.
+              </DialogDescription>
+            </div>
+          </div>
+        </DialogHeader>
+
+        {/* Controles de Sonido y Notificaciones */}
+        <div className="grid gap-2 sm:grid-cols-2 pt-2">
+          <div className="flex items-center justify-between p-3 rounded-2xl bg-muted/60 border">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+              {soundEnabled ? <Volume2 className="size-4 text-emerald-700" /> : <VolumeX className="size-4 text-slate-400" />}
+              <span>{soundEnabled ? 'Sonido activado' : 'Sonido silenciado'}</span>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onToggleSound}
+              className="h-8 rounded-lg text-xs font-bold px-2.5 bg-white"
+            >
+              {soundEnabled ? 'Silenciar' : 'Activar'}
+            </Button>
+          </div>
+
+          <div className="flex items-center justify-between p-3 rounded-2xl bg-muted/60 border">
+            <span className="text-xs font-bold text-slate-700">Probar sonido:</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onTestSound}
+              className="h-8 rounded-lg text-xs font-bold px-3 bg-white"
+            >
+              🔔 Probar chime
+            </Button>
+          </div>
+        </div>
+
+        {/* Permiso de notificaciones del navegador */}
+        <div className="rounded-2xl p-3.5 border bg-cyan-50/60 border-cyan-100 flex items-center justify-between gap-2">
+          <div>
+            <p className="text-xs font-extrabold text-cyan-950">Avisos en segundo plano (PC / Móvil)</p>
+            <p className="text-[11px] text-cyan-800">
+              {notifPermission === 'granted'
+                ? '✅ Notificaciones del navegador habilitadas.'
+                : 'Recibe alertas emergentes aunque la pestaña esté minimizada.'}
+            </p>
+          </div>
+          {notifPermission !== 'granted' && (
+            <Button
+              size="sm"
+              onClick={onRequestNotif}
+              className="h-8 text-xs font-bold rounded-xl bg-cyan-700 hover:bg-cyan-800 text-white shrink-0"
+            >
+              Permitir
+            </Button>
+          )}
+        </div>
+
+        {/* Lista de citas de hoy con cuenta regresiva */}
+        <div className="space-y-2">
+          <p className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
+            Agenda del Día ({appointments.length} citas registradas)
+          </p>
+          {appointments.length === 0 ? (
+            <div className="text-center py-6 text-sm text-muted-foreground bg-muted/30 rounded-2xl border border-dashed">
+              No hay citas programadas para el día de hoy.
+            </div>
+          ) : (
+            <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+              {appointments.map((item) => {
+                const isImminent = item.status === 'scheduled' && item.diffMinutes >= -15 && item.diffMinutes <= 25;
+                return (
+                  <div
+                    key={item.id}
+                    className={cn(
+                      'flex items-center justify-between p-3 rounded-xl border transition',
+                      isImminent
+                        ? 'bg-amber-50/90 border-amber-300 shadow-xs ring-1 ring-amber-400'
+                        : item.status === 'completed'
+                        ? 'bg-emerald-50/50 border-emerald-200'
+                        : item.status === 'checked_in'
+                        ? 'bg-cyan-50/60 border-cyan-200'
+                        : 'bg-white border-slate-200'
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono font-black text-sm text-slate-900 bg-slate-100 px-2 py-1 rounded-lg">
+                        {item.time}
+                      </span>
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            onOpenChange(false);
+                            onSelectPatient(item);
+                          }}
+                          className="font-bold text-sm text-left text-slate-900 hover:text-cyan-800 hover:underline block truncate max-w-[180px] sm:max-w-xs"
+                        >
+                          {item.name}
+                        </button>
+                        <span className="text-[11px] text-muted-foreground block">
+                          Sesión {item.used} de {item.total}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      {item.status === 'completed' ? (
+                        <Badge className="bg-emerald-600 text-white text-[10px] font-bold">
+                          Atendido
+                        </Badge>
+                      ) : item.status === 'checked_in' ? (
+                        <Badge className="bg-cyan-600 text-white text-[10px] font-bold">
+                          En sala
+                        </Badge>
+                      ) : item.diffMinutes <= 0 && item.diffMinutes >= -15 ? (
+                        <Badge className="bg-rose-600 text-white text-[10px] font-black animate-pulse">
+                          ¡Hora de cita!
+                        </Badge>
+                      ) : item.diffMinutes > 0 && item.diffMinutes <= 60 ? (
+                        <Badge className="bg-amber-500 text-white text-[10px] font-black">
+                          En {item.diffMinutes} min
+                        </Badge>
+                      ) : item.diffMinutes > 60 ? (
+                        <span className="text-xs font-semibold text-slate-500">
+                          En {(item.diffMinutes / 60).toFixed(1)} h
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">
+                          Hace {Math.abs(item.diffMinutes)} min
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
