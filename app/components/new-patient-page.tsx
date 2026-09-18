@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import {
   Activity,
+  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   Check,
   HeartPulse,
   Info,
   LoaderCircle,
+  Moon,
   Plus,
   Scale,
   Sparkles,
@@ -171,6 +173,21 @@ export function NewPatientPageView({
     : liveBmi < (isSenior ? 32 : 30)
     ? { label: 'Sobrepeso', color: 'text-amber-800 bg-amber-100 border-amber-300' }
     : { label: 'Obesidad', color: 'text-red-700 bg-red-50 border-red-300' };
+
+  const [showSleepHelp, setShowSleepHelp] = useState(false);
+
+  // Evaluación de horas de sueño según la OMS y requerimientos biomecánicos de columna
+  const parsedSleepHours = parseFloat(
+    sleepHours.replace(',', '.').match(/\d+(\.\d+)?/)?.[0] ?? ''
+  );
+  const hasSleepNumber = !isNaN(parsedSleepHours) && parsedSleepHours > 0;
+  const recommendedSleepMin = isSenior ? 7 : isYouth ? 8 : 7;
+  const recommendedSleepMax = isSenior ? 8 : isYouth ? 10 : 9;
+  const sleepDeficit =
+    hasSleepNumber && parsedSleepHours < recommendedSleepMin
+      ? Number((recommendedSleepMin - parsedSleepHours).toFixed(1))
+      : 0;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!firstName.trim() || !lastName.trim()) {
@@ -719,16 +736,207 @@ export function NewPatientPageView({
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="sleepHours">CUÁNTAS HORAS DUERME</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="sleepHours" className="flex items-center gap-1.5 font-bold">
+                        <Moon className="h-4 w-4 text-indigo-600" />
+                        CUÁNTAS HORAS DUERME
+                      </Label>
+                      <button
+                        type="button"
+                        onClick={() => setShowSleepHelp(!showSleepHelp)}
+                        className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold underline flex items-center gap-1"
+                      >
+                        <Info className="h-3.5 w-3.5" />
+                        {showSleepHelp ? 'Ocultar guía' : '¿Cuánto es lo normal?'}
+                      </button>
+                    </div>
                     <Input
                       id="sleepHours"
-                      placeholder="Ej. 6 horas al día"
+                      placeholder="Ej. 5 horas, 7 horas..."
                       value={sleepHours}
                       onChange={(e) => setSleepHours(e.target.value)}
                       className="h-11 rounded-xl"
                     />
                   </div>
                 </div>
+
+                {/* Alerta Clínica Dinámica según las Horas de Sueño */}
+                {hasSleepNumber && (
+                  <div
+                    className={cn(
+                      'rounded-2xl p-4 border transition-all text-xs space-y-2.5',
+                      parsedSleepHours < 6
+                        ? 'bg-rose-50/90 border-rose-300 text-rose-950 shadow-sm'
+                        : parsedSleepHours < recommendedSleepMin
+                        ? 'bg-amber-50/90 border-amber-300 text-amber-950 shadow-sm'
+                        : parsedSleepHours <= recommendedSleepMax
+                        ? 'bg-emerald-50/90 border-emerald-300 text-emerald-950 shadow-sm'
+                        : 'bg-sky-50/90 border-sky-300 text-sky-950 shadow-sm'
+                    )}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-black/10 pb-2">
+                      <div className="flex items-center gap-2">
+                        {parsedSleepHours < 6 ? (
+                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-rose-600 text-white font-bold text-xs shadow-sm">
+                            🚨
+                          </span>
+                        ) : parsedSleepHours < recommendedSleepMin ? (
+                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-500 text-white font-bold text-xs shadow-sm">
+                            ⚠️
+                          </span>
+                        ) : (
+                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-xs shadow-sm">
+                            ✓
+                          </span>
+                        )}
+                        <div>
+                          <p className="font-extrabold text-sm">
+                            {parsedSleepHours < 6
+                              ? `Alerta Clínica: Sueño Críticamente Insuficiente (${parsedSleepHours} horas/noche)`
+                              : parsedSleepHours < recommendedSleepMin
+                              ? `Aviso Clínico: Horas de Sueño por Debajo de lo Recomendado (${parsedSleepHours} hrs)`
+                              : parsedSleepHours <= recommendedSleepMax
+                              ? `Horas de Sueño en Rango Óptimo y Terapéutico (${parsedSleepHours} hrs)`
+                              : `Aviso: Horas de Sueño Prolongadas (${parsedSleepHours} hrs)`}
+                          </p>
+                          <p className="text-[11px] opacity-80">
+                            {isSenior
+                              ? 'Criterio para adultos mayores (65+ años): 7 a 8 horas recomendadas'
+                              : isYouth
+                              ? 'Criterio para jóvenes/menores (< 18 años): 8 a 10 horas recomendadas'
+                              : 'Criterio oficial OMS / NSF para adultos (18-64 años): 7 a 9 horas recomendadas'}
+                          </p>
+                        </div>
+                      </div>
+                      <span
+                        className={cn(
+                          'text-xs font-black px-2.5 py-1 rounded-full shadow-xs',
+                          parsedSleepHours < 6
+                            ? 'bg-rose-600 text-white'
+                            : parsedSleepHours < recommendedSleepMin
+                            ? 'bg-amber-600 text-white'
+                            : parsedSleepHours <= recommendedSleepMax
+                            ? 'bg-emerald-700 text-white'
+                            : 'bg-sky-700 text-white'
+                        )}
+                      >
+                        {parsedSleepHours < recommendedSleepMin
+                          ? `Déficit de -${sleepDeficit} horas`
+                          : 'Descanso Óptimo'}
+                      </span>
+                    </div>
+
+                    {parsedSleepHours < 6 ? (
+                      <div className="space-y-2 pt-1">
+                        <p className="font-bold text-rose-950 text-xs">
+                          ⚠️ Consecuencias directas en la columna y la efectividad del tratamiento quiropráctico:
+                        </p>
+                        <div className="grid gap-2 sm:grid-cols-3">
+                          <div className="bg-white/90 p-3 rounded-xl border border-rose-200">
+                            <strong className="text-rose-900 block font-bold mb-1 text-[11px] uppercase tracking-wide">
+                              1. Deshidratación de Discos
+                            </strong>
+                            <p className="text-[11px] text-slate-700 leading-snug">
+                              Los discos intervertebrales no tienen vasos sanguíneos directos; solo absorben agua y nutrientes en decúbito (reposo horizontal prolongado de mínimo 7h). Con 5 horas, amanecen deshidratados, rígidos y propensos a fisuras y hernias.
+                            </p>
+                          </div>
+                          <div className="bg-white/90 p-3 rounded-xl border border-rose-200">
+                            <strong className="text-rose-900 block font-bold mb-1 text-[11px] uppercase tracking-wide">
+                              2. Mayor Dolor (Hiperalgesia)
+                            </strong>
+                            <p className="text-[11px] text-slate-700 leading-snug">
+                              Dormir 5 horas activa citoquinas inflamatorias (IL-6, PCR) y sensibiliza el sistema nervioso central. El cerebro magnifica las señales de dolor lumbar y cervical, duplicando la molestia.
+                            </p>
+                          </div>
+                          <div className="bg-white/90 p-3 rounded-xl border border-rose-200">
+                            <strong className="text-rose-900 block font-bold mb-1 text-[11px] uppercase tracking-wide">
+                              3. Pérdida del Ajuste Quiropráctico
+                            </strong>
+                            <p className="text-[11px] text-slate-700 leading-snug">
+                              La falta de sueño profundo impide la relajación miofascial nocturna. Los espasmos y contracturas paravertebrales continúan jalando las vértebras a su posición desalineada previa.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : parsedSleepHours < recommendedSleepMin ? (
+                      <div className="bg-white/80 p-3 rounded-xl border border-amber-200 text-slate-700 leading-relaxed text-xs">
+                        <p>
+                          El paciente duerme menos del umbral biológico mínimo de <strong>{recommendedSleepMin} horas</strong>. Se aconseja pautas de higiene del sueño para acelerar la regeneración de tejidos y estabilizar los ajustes articulares.
+                        </p>
+                      </div>
+                    ) : parsedSleepHours <= recommendedSleepMax ? (
+                      <div className="bg-white/80 p-3 rounded-xl border border-emerald-200 text-slate-700 leading-relaxed text-xs">
+                        <p>
+                          Excelente hábito. Dormir entre <strong>{recommendedSleepMin} y {recommendedSleepMax} horas</strong> permite la descompresión intervertebral, adecuada segregación de hormona de crecimiento y relajación de la musculatura postural.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="bg-white/80 p-3 rounded-xl border border-sky-200 text-slate-700 leading-relaxed text-xs">
+                        <p>
+                          Dormir más de {recommendedSleepMax} horas con frecuencia puede indicar fatiga acumulada, hipersomnia o hipotonía muscular postural que requiere evaluación.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Explicación médica detallada sobre el sueño (colapsable) */}
+                {showSleepHelp && (
+                  <div className="rounded-2xl border border-indigo-200 bg-indigo-50/80 p-4 text-xs space-y-3 text-indigo-950 leading-relaxed">
+                    <div className="flex items-center justify-between">
+                      <p className="font-extrabold text-sm text-indigo-900 flex items-center gap-1.5">
+                        <Moon className="h-4 w-4 text-indigo-600" />
+                        ¿Cuánto es lo normal que debe dormir un paciente? (Guía Médica y Quiropráctica)
+                      </p>
+                      <span className="text-[11px] font-semibold text-indigo-700 bg-indigo-100 px-2.5 py-0.5 rounded-full">
+                        OMS / CDC / National Sleep Foundation
+                      </span>
+                    </div>
+
+                    <p>
+                      El descanso nocturno no es solo tiempo de reposo mental; para la columna vertebral es el <strong>único momento en que se revierte la compresión gravitacional del día a día</strong> y se regeneran los tejidos articulares.
+                    </p>
+
+                    <div className="grid gap-2.5 sm:grid-cols-3 pt-1 font-medium text-[11px]">
+                      <div className="bg-white p-3 rounded-xl border border-indigo-100 shadow-xs">
+                        <strong className="text-slate-900 block text-xs mb-0.5">Adultos (18 a 64 años)</strong>
+                        <span className="text-emerald-700 font-extrabold text-sm block">7 a 9 horas</span>
+                        <p className="text-muted-foreground mt-1 leading-snug">
+                          Mínimo 7 horas para completar 4 a 5 ciclos de sueño REM/NREM y permitir la rehidratación completa de los discos intervertebrales.
+                        </p>
+                      </div>
+                      <div className="bg-white p-3 rounded-xl border border-indigo-100 shadow-xs">
+                        <strong className="text-slate-900 block text-xs mb-0.5">Adultos mayores (65+ años)</strong>
+                        <span className="text-cyan-700 font-extrabold text-sm block">7 a 8 horas</span>
+                        <p className="text-muted-foreground mt-1 leading-snug">
+                          Suelen tener despertares intermedios, pero alcanzar al menos 7 horas previene la rigidez articular matutina y dolor crónico.
+                        </p>
+                      </div>
+                      <div className="bg-white p-3 rounded-xl border border-indigo-100 shadow-xs">
+                        <strong className="text-slate-900 block text-xs mb-0.5">Jóvenes y Adolescentes</strong>
+                        <span className="text-indigo-700 font-extrabold text-sm block">8 a 10 horas</span>
+                        <p className="text-muted-foreground mt-1 leading-snug">
+                          Indispensable para el pico de secreción de hormona del crecimiento (GH), remodelación ósea y postura durante el desarrollo.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="bg-white p-3.5 rounded-xl border border-indigo-100 text-[11px] space-y-1.5 text-slate-700">
+                      <strong className="text-indigo-950 font-bold text-xs block">
+                        ¿Qué sucede clínicamente cuando un paciente duerme solo 5 horas?
+                      </strong>
+                      <p>
+                        • <strong>Efecto Esponja de los Discos (Imbibición Osmótica):</strong> Durante el día perdemos entre 1 y 2 cm de estatura porque el peso corporal exprime el agua de los discos. Rehidratarlos requiere de 7 a 8 horas seguidas en posición horizontal. Al dormir solo 5 horas, el disco amanece deshidratado y pierde hasta 30% de su capacidad para absorber impactos mecánicos.
+                      </p>
+                      <p>
+                        • <strong>Sensibilización Central e Hiperalgesia:</strong> La falta crónica de sueño suprime los mecanismos analgésicos naturales del cerebro y eleva los niveles de cortisol y citoquinas inflamatorias. El paciente se vuelve hipersensible al dolor.
+                      </p>
+                      <p>
+                        • <strong>Menor Retención de los Ajustes Quiroprácticos:</strong> La musculatura postural no logra la fase de relajación atónica del sueño profundo, manteniendo espasmos y contracturas que fuerzan a las vértebras corregidas a desalinearse de nuevo en poco tiempo.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-2 rounded-2xl bg-muted/40 p-4 border">
                   <div className="flex justify-between items-center">

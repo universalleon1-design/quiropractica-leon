@@ -1124,7 +1124,45 @@ function PatientRecordPage({ patient, onBack, onDeleted, onSaved }: { patient: P
                     </div>
                     <div>
                       <span className="text-xs text-muted-foreground block">Horas de Sueño</span>
-                      <strong className="text-slate-900">{record.anamnesis.sleep_hours ? `${record.anamnesis.sleep_hours} hrs` : 'No indicado'}</strong>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                        <strong className="text-slate-900">
+                          {record.anamnesis.sleep_hours
+                            ? record.anamnesis.sleep_hours.toLowerCase().includes('hora') || record.anamnesis.sleep_hours.toLowerCase().includes('hr')
+                              ? record.anamnesis.sleep_hours
+                              : `${record.anamnesis.sleep_hours} hrs`
+                            : 'No indicado'}
+                        </strong>
+                        {(() => {
+                          const parsed = parseFloat((record.anamnesis.sleep_hours || '').replace(',', '.').match(/\d+(\.\d+)?/)?.[0] ?? '');
+                          if (isNaN(parsed) || parsed <= 0) return null;
+                          if (parsed < 6) {
+                            return (
+                              <Badge className="bg-rose-500 hover:bg-rose-600 text-[10px] font-bold px-1.5 py-0">
+                                🚨 Déficit severo ({parsed}h)
+                              </Badge>
+                            );
+                          }
+                          if (parsed < 7) {
+                            return (
+                              <Badge className="bg-amber-500 hover:bg-amber-600 text-[10px] font-bold px-1.5 py-0">
+                                ⚠️ Insuficiente ({parsed}h)
+                              </Badge>
+                            );
+                          }
+                          if (parsed <= 9) {
+                            return (
+                              <Badge className="bg-emerald-600 hover:bg-emerald-700 text-[10px] font-bold px-1.5 py-0">
+                                ✓ Óptimo ({parsed}h)
+                              </Badge>
+                            );
+                          }
+                          return (
+                            <Badge className="bg-sky-600 hover:bg-sky-700 text-[10px] font-bold px-1.5 py-0">
+                              Prolongado ({parsed}h)
+                            </Badge>
+                          );
+                        })()}
+                      </div>
                     </div>
                     <div>
                       <span className="text-xs text-muted-foreground block">Embarazo</span>
