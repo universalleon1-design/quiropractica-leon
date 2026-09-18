@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import {
@@ -7,6 +7,7 @@ import {
   ArrowRight,
   Check,
   HeartPulse,
+  Info,
   LoaderCircle,
   Plus,
   Scale,
@@ -134,19 +135,42 @@ export function NewPatientPageView({
     } catch {}
   }
 
+  const [showBmiHelp, setShowBmiHelp] = useState(false);
+
   const weight = Number(weightKg);
   const height = Number(heightCm);
-  const liveBmi = weight > 0 && height > 0 ? weight / ((height / 100) ** 2) : null;
-  const bmiCategory =
-    !liveBmi
-      ? null
-      : liveBmi < 18.5
-      ? { label: 'Bajo peso', color: 'text-amber-600 bg-amber-50 border-amber-200' }
-      : liveBmi < 25
-      ? { label: 'Peso saludable', color: 'text-emerald-700 bg-emerald-50 border-emerald-200' }
-      : liveBmi < 30
-      ? { label: 'Sobrepeso', color: 'text-amber-700 bg-amber-50 border-amber-200' }
-      : { label: 'Obesidad', color: 'text-red-700 bg-red-50 border-red-200' };
+  const patientAgeNum = Number(age) || 0;
+  const isSenior = patientAgeNum >= 65;
+  const isYouth = patientAgeNum > 0 && patientAgeNum < 18;
+
+  // Criterios de IMC según la OMS y Geriatría clínica
+  const minBmi = isSenior ? 23.0 : isYouth ? 17.0 : 18.5;
+  const maxBmi = isSenior ? 28.0 : isYouth ? 23.0 : 24.9;
+
+  const heightM = height > 0 ? height / 100 : null;
+  const liveBmi = weight > 0 && heightM ? weight / (heightM * heightM) : null;
+
+  const healthyMinKg = heightM ? Number((minBmi * heightM * heightM).toFixed(1)) : null;
+  const healthyMaxKg = heightM ? Number((maxBmi * heightM * heightM).toFixed(1)) : null;
+
+  const weightDiff =
+    weight > 0 && healthyMaxKg && healthyMinKg
+      ? weight > healthyMaxKg
+        ? Number((weight - healthyMaxKg).toFixed(1))
+        : weight < healthyMinKg
+        ? Number((healthyMinKg - weight).toFixed(1))
+        : 0
+      : null;
+
+  const bmiCategory = !liveBmi
+    ? null
+    : liveBmi < minBmi
+    ? { label: 'Bajo peso', color: 'text-amber-700 bg-amber-50 border-amber-300' }
+    : liveBmi <= maxBmi
+    ? { label: 'Peso saludable', color: 'text-emerald-700 bg-emerald-50 border-emerald-300' }
+    : liveBmi < (isSenior ? 32 : 30)
+    ? { label: 'Sobrepeso', color: 'text-amber-800 bg-amber-100 border-amber-300' }
+    : { label: 'Obesidad', color: 'text-red-700 bg-red-50 border-red-300' };
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!firstName.trim() || !lastName.trim()) {
@@ -504,42 +528,59 @@ export function NewPatientPageView({
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-5 space-y-4">
-                <div className="flex items-center gap-2">
-                  <Scale className="size-4 text-cyan-800" />
-                  <h4 className="font-extrabold text-sm text-slate-800">
-                    PESO Y TALLA
-                  </h4>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <Scale className="size-4 text-cyan-800" />
+                    <h4 className="font-extrabold text-sm text-slate-800">
+                      PESO Y TALLA (BIOMETRÍA)
+                    </h4>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowBmiHelp((v) => !v)}
+                    className="flex items-center gap-1 text-xs font-bold text-cyan-700 hover:text-cyan-900 underline-offset-2 hover:underline"
+                  >
+                    <Info className="size-3.5" />
+                    {showBmiHelp ? 'Ocultar explicación' : '¿Qué es el IMC y rango tolerable?'}
+                  </button>
                 </div>
+
                 <div className="grid gap-4 sm:grid-cols-3">
                   <div className="space-y-2">
-                    <Label htmlFor="weightKg">PESO (kg)</Label>
+                    <Label htmlFor="weightKg" className="text-xs font-bold text-slate-700">
+                      PESO (kg)
+                    </Label>
                     <Input
                       id="weightKg"
                       type="number"
                       step="0.1"
-                      placeholder="Ej. 70.5"
+                      placeholder="Ej. 60"
                       value={weightKg}
                       onChange={(e) => setWeightKg(e.target.value)}
                       className="h-11 rounded-xl bg-white"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="heightCm">TALLA (cm)</Label>
+                    <Label htmlFor="heightCm" className="text-xs font-bold text-slate-700">
+                      TALLA (cm)
+                    </Label>
                     <Input
                       id="heightCm"
                       type="number"
                       step="0.1"
-                      placeholder="Ej. 165"
+                      placeholder="Ej. 160"
                       value={heightCm}
                       onChange={(e) => setHeightCm(e.target.value)}
                       className="h-11 rounded-xl bg-white"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label>IMC CALCULADO</Label>
+                    <Label className="text-xs font-bold text-slate-700">
+                      IMC CALCULADO
+                    </Label>
                     <div className="flex h-11 items-center justify-between rounded-xl border bg-white px-4">
-                      <span className="font-black text-slate-900">
+                      <span className="font-black text-slate-900 text-base">
                         {liveBmi ? liveBmi.toFixed(1) : '—'}
                       </span>
                       {bmiCategory && (
@@ -555,6 +596,98 @@ export function NewPatientPageView({
                     </div>
                   </div>
                 </div>
+
+                {/* Rango de peso tolerable según estatura y edad */}
+                {height > 0 && healthyMinKg && healthyMaxKg && (
+                  <div className="rounded-xl border border-cyan-200 bg-white p-4 space-y-3">
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 items-center">
+                      <div>
+                        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+                          Rango de peso tolerable para su talla
+                        </span>
+                        <p className="mt-1 text-lg font-black text-cyan-950">
+                          {healthyMinKg} kg – {healthyMaxKg} kg
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {isSenior
+                            ? `Adulto mayor (${patientAgeNum} años: IMC 23.0 - 28.0 para protección ósea)`
+                            : isYouth
+                            ? `Juvenil (${patientAgeNum} años)`
+                            : `Para ${heightCm} cm de estatura (IMC normal OMS 18.5 - 24.9)`}
+                        </p>
+                      </div>
+
+                      {weight > 0 && (
+                        <div>
+                          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+                            Estado actual vs rango
+                          </span>
+                          <p className="mt-1 font-bold text-sm">
+                            {weight >= healthyMinKg && weight <= healthyMaxKg ? (
+                              <span className="text-emerald-700 flex items-center gap-1.5 font-extrabold">
+                                <Check className="size-4" /> Peso óptimo / saludable
+                              </span>
+                            ) : weight > healthyMaxKg ? (
+                              <span className="text-amber-700 font-extrabold">
+                                +{weightDiff} kg por encima del peso ideal
+                              </span>
+                            ) : (
+                              <span className="text-amber-700 font-extrabold">
+                                {weightDiff} kg por debajo del mínimo saludable
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            Peso ingresado: {weight} kg
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="rounded-xl bg-cyan-50/70 p-3 border border-cyan-100 text-xs text-slate-700 sm:col-span-2 lg:col-span-1">
+                        <strong className="text-cyan-900 block mb-0.5">Evaluación Quiropráctica:</strong>
+                        {weight > healthyMaxKg ? (
+                          <span>El sobrepeso genera sobrecarga mecánica en discos lumbares (L4-L5-S1) y pelvis.</span>
+                        ) : weight < healthyMinKg && weight > 0 ? (
+                          <span>El bajo peso puede asociarse a debilidad muscular para el sostén de la columna.</span>
+                        ) : (
+                          <span>Carga articular equilibrada, óptima para la alineación vertebral y el tratamiento.</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Explicación médica detallada colapsable */}
+                {showBmiHelp && (
+                  <div className="rounded-xl border border-slate-200 bg-slate-100/70 p-4 text-xs space-y-2 text-slate-700 leading-relaxed">
+                    <p className="font-extrabold text-slate-900 text-sm">
+                      ¿Qué es el IMC y qué significan esas numeraciones?
+                    </p>
+                    <p>
+                      El <strong>IMC (Índice de Masa Corporal)</strong> es el indicador internacional oficial de la <strong>OMS (Organización Mundial de la Salud)</strong> que relaciona el peso y la estatura de una persona mediante la fórmula: <code className="bg-white px-1.5 py-0.5 rounded font-bold">Peso ÷ (Estatura en metros)²</code>.
+                    </p>
+                    <p>
+                      <strong>Ejemplo con tu imagen (Peso 60 kg y Talla 160 cm = 1.60 m):</strong>
+                      <br />
+                      • Se multiplica la talla por sí misma: 1.60 × 1.60 = <strong>2.56</strong>
+                      <br />
+                      • Se divide el peso entre ese número: 60 ÷ 2.56 = <strong className="text-cyan-800">23.4</strong>
+                    </p>
+                    <div className="grid gap-2 sm:grid-cols-2 pt-1 font-medium">
+                      <div className="bg-white p-2.5 rounded-lg border">
+                        <strong className="text-slate-900 block mb-1">Escala OMS (Adultos 18 a 64 años):</strong>
+                        • <strong>Menos de 18.5:</strong> Bajo peso<br />
+                        • <strong>18.5 a 24.9:</strong> Peso saludable (Normal)<br />
+                        • <strong>25.0 a 29.9:</strong> Sobrepeso<br />
+                        • <strong>30.0 a más:</strong> Obesidad
+                      </div>
+                      <div className="bg-white p-2.5 rounded-lg border">
+                        <strong className="text-slate-900 block mb-1">Adultos mayores (65+ años):</strong>
+                        En geriatría se tolera un IMC de <strong>23.0 a 28.0</strong> para proteger la densidad ósea y prevenir la pérdida de masa muscular (sarcopenia).
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-4">
