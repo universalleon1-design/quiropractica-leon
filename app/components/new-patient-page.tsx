@@ -54,9 +54,11 @@ type PatientQrResult = {
 export function NewPatientPageView({
   onSaved,
   onFinished,
+  onViewPatients,
 }: {
   onSaved: () => void;
   onFinished: (patient: Patient) => void;
+  onViewPatients?: () => void;
 }) {
   const today = new Date().toISOString().slice(0, 10);
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -105,13 +107,14 @@ export function NewPatientPageView({
   const [pregnancyTime, setPregnancyTime] = useState('');
   const [medications, setMedications] = useState('');
 
-  // Evaluacion de Columna
-  const [spineInclinationDir, setSpineInclinationDir] = useState<'I' | 'D'>('D');
-  const [spineInclinationLevel, setSpineInclinationLevel] = useState('2');
-  const [spineRotationDir, setSpineRotationDir] = useState<'I' | 'D'>('D');
-  const [spineRotationLevel, setSpineRotationLevel] = useState('2');
-  const [spineExtension, setSpineExtension] = useState('3');
-  const [iliac, setIliac] = useState<'Derecho' | 'Izquierdo'>('Derecho');
+  // Evaluacion de Columna (Valores separados I y D de 1 al 5)
+  const [spineInclinationLeft, setSpineInclinationLeft] = useState('1');
+  const [spineInclinationRight, setSpineInclinationRight] = useState('1');
+  const [spineRotationLeft, setSpineRotationLeft] = useState('1');
+  const [spineRotationRight, setSpineRotationRight] = useState('1');
+  const [spineExtension, setSpineExtension] = useState('1');
+  const [iliacLeft, setIliacLeft] = useState('1');
+  const [iliacRight, setIliacRight] = useState('1');
   const [gaitTiptoes, setGaitTiptoes] = useState('Normal');
   const [gaitHeels, setGaitHeels] = useState('Normal');
 
@@ -250,10 +253,10 @@ export function NewPatientPageView({
       sleepHours: sleepHours.trim(),
       pregnancyStatus: isPregnant === 'Sí' ? `Sí - ${pregnancyTime || 'en gestación'}` : 'No',
       medications: medications.trim(),
-      spineInclination: `${spineInclinationDir} - Nivel ${spineInclinationLevel}`,
-      spineRotation: `${spineRotationDir} - Nivel ${spineRotationLevel}`,
-      spineExtension: `Nivel ${spineExtension}`,
-      iliac,
+      spineInclination: `Izq: ${spineInclinationLeft}/5 • Der: ${spineInclinationRight}/5`,
+      spineRotation: `Izq: ${spineRotationLeft}/5 • Der: ${spineRotationRight}/5`,
+      spineExtension: `Dolor: ${spineExtension}/5`,
+      iliac: `Izq: ${iliacLeft}/5 • Der: ${iliacRight}/5`,
       gaitTiptoes,
       gaitHeels,
       pronePosition: pronePosition.trim(),
@@ -344,7 +347,22 @@ export function NewPatientPageView({
     setAddress('');
     setOccupation('');
     setMainComplaint('');
+    setPainDurationHours('');
+    setPainLevel(5);
+    setGeneralHealth('Bueno');
+    setSleepHours('7 horas');
+    setIsPregnant('No');
+    setPregnancyTime('');
     setMedications('');
+    setSpineInclinationLeft('1');
+    setSpineInclinationRight('1');
+    setSpineRotationLeft('1');
+    setSpineRotationRight('1');
+    setSpineExtension('1');
+    setIliacLeft('1');
+    setIliacRight('1');
+    setGaitTiptoes('Normal');
+    setGaitHeels('Normal');
     setClinicalNotes('');
   }
 
@@ -371,19 +389,73 @@ export function NewPatientPageView({
             qrValue={result.qrValue}
           />
 
+          {/* Tarjeta de Resumen Clínico Rápido */}
+          <div className="mt-6 text-left rounded-2xl bg-cyan-50/40 border border-cyan-100 p-5 space-y-3">
+            <div className="flex items-center justify-between border-b border-cyan-100 pb-2">
+              <span className="text-xs font-black uppercase tracking-wider text-cyan-900 flex items-center gap-1.5">
+                <FileText className="size-4 text-cyan-700" />
+                Resumen Clínico Registrado
+              </span>
+              <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100/80 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                Guardado en Sistema
+              </span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+              <div>
+                <span className="text-slate-500 font-medium block">DNI</span>
+                <strong className="text-slate-900 font-bold">{dni || 'No registrado'}</strong>
+              </div>
+              <div>
+                <span className="text-slate-500 font-medium block">Teléfono</span>
+                <strong className="text-slate-900 font-bold">{phone || 'No registrado'}</strong>
+              </div>
+              <div>
+                <span className="text-slate-500 font-medium block">Plan Contratado</span>
+                <strong className="text-slate-900 font-bold">{totalSessions || 8} sesiones ({sessionsPerWeek}/sem)</strong>
+              </div>
+              <div className="sm:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-cyan-100/60">
+                <div className="rounded-lg bg-white p-2 border">
+                  <span className="text-[11px] text-slate-400 block font-semibold">Inclinación (I/D)</span>
+                  <span className="font-black text-cyan-900 text-xs">I: {spineInclinationLeft}/5 • D: {spineInclinationRight}/5</span>
+                </div>
+                <div className="rounded-lg bg-white p-2 border">
+                  <span className="text-[11px] text-slate-400 block font-semibold">Rotación (I/D)</span>
+                  <span className="font-black text-cyan-900 text-xs">I: {spineRotationLeft}/5 • D: {spineRotationRight}/5</span>
+                </div>
+                <div className="rounded-lg bg-white p-2 border">
+                  <span className="text-[11px] text-slate-400 block font-semibold">Extensión</span>
+                  <span className="font-black text-cyan-900 text-xs">{spineExtension} / 5</span>
+                </div>
+                <div className="rounded-lg bg-white p-2 border">
+                  <span className="text-[11px] text-slate-400 block font-semibold">Ilíaco (I/D)</span>
+                  <span className="font-black text-cyan-900 text-xs">I: {iliacLeft}/5 • D: {iliacRight}/5</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Button
               onClick={() => onFinished(result.patient)}
               className="h-12 w-full sm:w-auto rounded-xl px-7 font-bold bg-emerald-700 hover:bg-emerald-800 text-white shadow-md"
             >
-              Abrir expediente clínico <ArrowRight className="ml-2 size-4" />
+              <FileText className="mr-2 size-4" /> Abrir expediente clínico completo
             </Button>
+            {onViewPatients && (
+              <Button
+                variant="outline"
+                onClick={onViewPatients}
+                className="h-12 w-full sm:w-auto rounded-xl px-5 font-bold border-cyan-300 text-cyan-900 hover:bg-cyan-50"
+              >
+                <Users className="mr-2 size-4 text-cyan-700" /> Ir a lista de Pacientes
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={resetForm}
-              className="h-12 w-full sm:w-auto rounded-xl px-6 font-bold border-slate-300 hover:bg-slate-50"
+              className="h-12 w-full sm:w-auto rounded-xl px-5 font-bold border-slate-300 hover:bg-slate-50"
             >
-              <Plus className="mr-2 size-4" /> Registrar otro paciente
+              <Plus className="mr-2 size-4" /> Registrar otro
             </Button>
           </div>
         </Card>
@@ -1091,42 +1163,69 @@ export function NewPatientPageView({
                 </div>
 
                 <div className="grid gap-6 sm:grid-cols-2">
-                  <div className="space-y-2.5 rounded-xl bg-white p-4 border">
-                    <Label className="font-bold text-xs uppercase tracking-wider text-slate-700">
-                      INCLINACIÓN: I / D (1 AL 5)
-                    </Label>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <div className="flex rounded-xl bg-muted p-1">
-                        <button
-                          type="button"
-                          onClick={() => setSpineInclinationDir('I')}
-                          className={cn(
-                            'rounded-lg px-3 py-1.5 text-xs font-black transition',
-                            spineInclinationDir === 'I' ? 'bg-cyan-700 text-white shadow-sm' : 'text-slate-600'
-                          )}
-                        >
-                          I (Izquierda)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSpineInclinationDir('D')}
-                          className={cn(
-                            'rounded-lg px-3 py-1.5 text-xs font-black transition',
-                            spineInclinationDir === 'D' ? 'bg-cyan-700 text-white shadow-sm' : 'text-slate-600'
-                          )}
-                        >
-                          D (Derecha)
-                        </button>
+                  {/* 1. INCLINACIÓN */}
+                  <div className="space-y-3 rounded-2xl bg-white p-4 border shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <Label className="font-bold text-xs uppercase tracking-wider text-slate-800">
+                        INCLINACIÓN
+                      </Label>
+                      <span className="text-[11px] font-semibold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded-md border border-cyan-200">
+                        Escala 1 al 5
+                      </span>
+                    </div>
+
+                    {/* Izquierda */}
+                    <div className="rounded-xl bg-slate-50 p-2.5 border">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">I</span>
+                          Izquierda:
+                        </span>
+                        <span className="text-xs font-black text-cyan-900">
+                          Dolor: {spineInclinationLeft} / 5
+                        </span>
                       </div>
-                      <div className="flex gap-1">
+                      <div className="grid grid-cols-5 gap-1.5">
                         {['1', '2', '3', '4', '5'].map((lvl) => (
                           <button
                             key={lvl}
                             type="button"
-                            onClick={() => setSpineInclinationLevel(lvl)}
+                            onClick={() => setSpineInclinationLeft(lvl)}
                             className={cn(
-                              'size-9 rounded-xl text-xs font-black transition border',
-                              spineInclinationLevel === lvl ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 hover:bg-slate-100'
+                              'h-9 rounded-lg text-xs font-black transition border',
+                              spineInclinationLeft === lvl
+                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-sm ring-2 ring-cyan-400/30'
+                                : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
+                            )}
+                          >
+                            {lvl}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Derecha */}
+                    <div className="rounded-xl bg-slate-50 p-2.5 border">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">D</span>
+                          Derecha:
+                        </span>
+                        <span className="text-xs font-black text-cyan-900">
+                          Dolor: {spineInclinationRight} / 5
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-5 gap-1.5">
+                        {['1', '2', '3', '4', '5'].map((lvl) => (
+                          <button
+                            key={lvl}
+                            type="button"
+                            onClick={() => setSpineInclinationRight(lvl)}
+                            className={cn(
+                              'h-9 rounded-lg text-xs font-black transition border',
+                              spineInclinationRight === lvl
+                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-sm ring-2 ring-cyan-400/30'
+                                : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
                             )}
                           >
                             {lvl}
@@ -1136,42 +1235,69 @@ export function NewPatientPageView({
                     </div>
                   </div>
 
-                  <div className="space-y-2.5 rounded-xl bg-white p-4 border">
-                    <Label className="font-bold text-xs uppercase tracking-wider text-slate-700">
-                      ROTACIÓN: I / D (1 AL 5)
-                    </Label>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <div className="flex rounded-xl bg-muted p-1">
-                        <button
-                          type="button"
-                          onClick={() => setSpineRotationDir('I')}
-                          className={cn(
-                            'rounded-lg px-3 py-1.5 text-xs font-black transition',
-                            spineRotationDir === 'I' ? 'bg-cyan-700 text-white shadow-sm' : 'text-slate-600'
-                          )}
-                        >
-                          I (Izquierda)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setSpineRotationDir('D')}
-                          className={cn(
-                            'rounded-lg px-3 py-1.5 text-xs font-black transition',
-                            spineRotationDir === 'D' ? 'bg-cyan-700 text-white shadow-sm' : 'text-slate-600'
-                          )}
-                        >
-                          D (Derecha)
-                        </button>
+                  {/* 2. ROTACIÓN */}
+                  <div className="space-y-3 rounded-2xl bg-white p-4 border shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <Label className="font-bold text-xs uppercase tracking-wider text-slate-800">
+                        ROTACIÓN
+                      </Label>
+                      <span className="text-[11px] font-semibold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded-md border border-cyan-200">
+                        Escala 1 al 5
+                      </span>
+                    </div>
+
+                    {/* Izquierda */}
+                    <div className="rounded-xl bg-slate-50 p-2.5 border">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">I</span>
+                          Izquierda:
+                        </span>
+                        <span className="text-xs font-black text-cyan-900">
+                          Dolor: {spineRotationLeft} / 5
+                        </span>
                       </div>
-                      <div className="flex gap-1">
+                      <div className="grid grid-cols-5 gap-1.5">
                         {['1', '2', '3', '4', '5'].map((lvl) => (
                           <button
                             key={lvl}
                             type="button"
-                            onClick={() => setSpineRotationLevel(lvl)}
+                            onClick={() => setSpineRotationLeft(lvl)}
                             className={cn(
-                              'size-9 rounded-xl text-xs font-black transition border',
-                              spineRotationLevel === lvl ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 hover:bg-slate-100'
+                              'h-9 rounded-lg text-xs font-black transition border',
+                              spineRotationLeft === lvl
+                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-sm ring-2 ring-cyan-400/30'
+                                : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
+                            )}
+                          >
+                            {lvl}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Derecha */}
+                    <div className="rounded-xl bg-slate-50 p-2.5 border">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">D</span>
+                          Derecha:
+                        </span>
+                        <span className="text-xs font-black text-cyan-900">
+                          Dolor: {spineRotationRight} / 5
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-5 gap-1.5">
+                        {['1', '2', '3', '4', '5'].map((lvl) => (
+                          <button
+                            key={lvl}
+                            type="button"
+                            onClick={() => setSpineRotationRight(lvl)}
+                            className={cn(
+                              'h-9 rounded-lg text-xs font-black transition border',
+                              spineRotationRight === lvl
+                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-sm ring-2 ring-cyan-400/30'
+                                : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
                             )}
                           >
                             {lvl}
@@ -1181,45 +1307,111 @@ export function NewPatientPageView({
                     </div>
                   </div>
 
-                  <div className="space-y-2.5 rounded-xl bg-white p-4 border">
-                    <Label className="font-bold text-xs uppercase tracking-wider text-slate-700">
-                      EXTENSIÓN: (1 AL 5)
-                    </Label>
-                    <div className="flex gap-2">
+                  {/* 3. EXTENSIÓN */}
+                  <div className="space-y-3 rounded-2xl bg-white p-4 border shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <Label className="font-bold text-xs uppercase tracking-wider text-slate-800">
+                        EXTENSIÓN
+                      </Label>
+                      <span className="text-xs font-black text-cyan-900">
+                        Dolor: {spineExtension} / 5
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      Nivel de dolor o molestia al realizar extensión posterior
+                    </p>
+                    <div className="grid grid-cols-5 gap-1.5 pt-1">
                       {['1', '2', '3', '4', '5'].map((lvl) => (
                         <button
                           key={lvl}
                           type="button"
                           onClick={() => setSpineExtension(lvl)}
                           className={cn(
-                            'size-11 rounded-xl text-sm font-black transition border flex-1',
-                            spineExtension === lvl ? 'bg-slate-900 text-white border-slate-900 shadow-sm' : 'bg-slate-50 hover:bg-slate-100'
+                            'h-11 rounded-xl text-sm font-black transition border',
+                            spineExtension === lvl
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-sm ring-2 ring-slate-400/30'
+                              : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
                           )}
                         >
                           {lvl}
                         </button>
                       ))}
                     </div>
+                    <div className="flex justify-between text-[11px] text-slate-400 font-medium px-1">
+                      <span>1: Sin dolor</span>
+                      <span>5: Dolor severo</span>
+                    </div>
                   </div>
 
-                  <div className="space-y-2.5 rounded-xl bg-white p-4 border">
-                    <Label className="font-bold text-xs uppercase tracking-wider text-slate-700">
-                      ILÍACO: DERECHO / IZQUIERDO
-                    </Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {['Derecho', 'Izquierdo'].map((side) => (
-                        <button
-                          key={side}
-                          type="button"
-                          onClick={() => setIliac(side as 'Derecho' | 'Izquierdo')}
-                          className={cn(
-                            'h-11 rounded-xl text-sm font-bold border transition',
-                            iliac === side ? 'bg-cyan-700 text-white border-cyan-700 shadow-sm' : 'bg-white hover:bg-slate-50'
-                          )}
-                        >
-                          {side}
-                        </button>
-                      ))}
+                  {/* 4. ILÍACO */}
+                  <div className="space-y-3 rounded-2xl bg-white p-4 border shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <Label className="font-bold text-xs uppercase tracking-wider text-slate-800">
+                        ILÍACO
+                      </Label>
+                      <span className="text-[11px] font-semibold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded-md border border-cyan-200">
+                        Escala 1 al 5
+                      </span>
+                    </div>
+
+                    {/* Izquierdo */}
+                    <div className="rounded-xl bg-slate-50 p-2.5 border">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">I</span>
+                          Izquierdo:
+                        </span>
+                        <span className="text-xs font-black text-cyan-900">
+                          Dolor: {iliacLeft} / 5
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-5 gap-1.5">
+                        {['1', '2', '3', '4', '5'].map((lvl) => (
+                          <button
+                            key={lvl}
+                            type="button"
+                            onClick={() => setIliacLeft(lvl)}
+                            className={cn(
+                              'h-9 rounded-lg text-xs font-black transition border',
+                              iliacLeft === lvl
+                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-sm ring-2 ring-cyan-400/30'
+                                : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
+                            )}
+                          >
+                            {lvl}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Derecho */}
+                    <div className="rounded-xl bg-slate-50 p-2.5 border">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">D</span>
+                          Derecho:
+                        </span>
+                        <span className="text-xs font-black text-cyan-900">
+                          Dolor: {iliacRight} / 5
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-5 gap-1.5">
+                        {['1', '2', '3', '4', '5'].map((lvl) => (
+                          <button
+                            key={lvl}
+                            type="button"
+                            onClick={() => setIliacRight(lvl)}
+                            className={cn(
+                              'h-9 rounded-lg text-xs font-black transition border',
+                              iliacRight === lvl
+                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-sm ring-2 ring-cyan-400/30'
+                                : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
+                            )}
+                          >
+                            {lvl}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
 

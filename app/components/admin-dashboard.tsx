@@ -510,6 +510,10 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
                     void refresh();
                     setPatientOpen(patient);
                   }}
+                  onViewPatients={() => {
+                    void refresh();
+                    setView('patients');
+                  }}
                 />
               )}
               {view === 'calendar' && <CalendarView schedule={data.schedule} />}
@@ -1188,6 +1192,17 @@ function PatientsView({
                 </div>
                 <Progress value={patient.total ? (patient.used / patient.total) * 100 : 0} className="mt-2" />
               </div>
+
+              <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span className="text-muted-foreground font-medium">Expediente Clínico</span>
+                <button
+                  type="button"
+                  onClick={() => onPatient(patient)}
+                  className="font-bold text-cyan-800 hover:text-cyan-950 flex items-center gap-1 transition"
+                >
+                  Ver resumen <ChevronRight className="size-3.5" />
+                </button>
+              </div>
             </div>
           ))}
           {filtered.length === 0 && (
@@ -1338,6 +1353,55 @@ type PatientRecord = {
   payments: { id: string; amountCents: number; method?: string; paidAt: string }[];
   supplements: { id: string; name: string; instructions?: string; quantity?: string }[];
 };
+
+function renderSpinePainBadges(val?: string | null) {
+  if (!val) return <span className="text-slate-400 font-medium">Normal</span>;
+  const parts = val.split(/[•|]/).map((s) => s.trim()).filter(Boolean);
+  if (parts.length > 1) {
+    return (
+      <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+        {parts.map((part, idx) => {
+          const match = part.match(/([1-5])\/5/);
+          const score = match ? Number(match[1]) : 1;
+          const badgeClass =
+            score >= 4
+              ? 'bg-rose-50 text-rose-800 border-rose-200'
+              : score >= 3
+              ? 'bg-amber-50 text-amber-800 border-amber-200'
+              : score >= 2
+              ? 'bg-yellow-50 text-yellow-800 border-yellow-200'
+              : 'bg-emerald-50 text-emerald-800 border-emerald-200';
+          return (
+            <span
+              key={idx}
+              className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold border ${badgeClass}`}
+            >
+              {part}
+            </span>
+          );
+        })}
+      </div>
+    );
+  }
+  const match = val.match(/([1-5])\/5/);
+  if (match) {
+    const score = Number(match[1]);
+    const badgeClass =
+      score >= 4
+        ? 'bg-rose-50 text-rose-800 border-rose-200'
+        : score >= 3
+        ? 'bg-amber-50 text-amber-800 border-amber-200'
+        : score >= 2
+        ? 'bg-yellow-50 text-yellow-800 border-yellow-200'
+        : 'bg-emerald-50 text-emerald-800 border-emerald-200';
+    return (
+      <span className={`inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-bold border mt-0.5 ${badgeClass}`}>
+        {val}
+      </span>
+    );
+  }
+  return <strong className="text-slate-900 block mt-0.5">{val}</strong>;
+}
 
 function PatientRecordPage({ patient, onBack, onDeleted, onSaved }: { patient: Patient; onBack: () => void; onDeleted: () => void; onSaved: () => void }) {
   const [uploading, setUploading] = useState('');
@@ -1563,19 +1627,19 @@ function PatientRecordPage({ patient, onBack, onDeleted, onSaved }: { patient: P
                   <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 text-sm">
                     <div>
                       <span className="text-xs text-muted-foreground block">Inclinación</span>
-                      <strong className="text-slate-900">{record.anamnesis.spine_inclination || 'Normal'}</strong>
+                      {renderSpinePainBadges(record.anamnesis.spine_inclination)}
                     </div>
                     <div>
                       <span className="text-xs text-muted-foreground block">Rotación</span>
-                      <strong className="text-slate-900">{record.anamnesis.spine_rotation || 'Normal'}</strong>
+                      {renderSpinePainBadges(record.anamnesis.spine_rotation)}
                     </div>
                     <div>
                       <span className="text-xs text-muted-foreground block">Extensión</span>
-                      <strong className="text-slate-900">{record.anamnesis.spine_extension || 'Normal'}</strong>
+                      {renderSpinePainBadges(record.anamnesis.spine_extension)}
                     </div>
                     <div>
                       <span className="text-xs text-muted-foreground block">Ilíaco</span>
-                      <strong className="text-slate-900">{record.anamnesis.iliac || 'Normal'}</strong>
+                      {renderSpinePainBadges(record.anamnesis.iliac)}
                     </div>
                     <div>
                       <span className="text-xs text-muted-foreground block">Marcha de Puntas</span>
