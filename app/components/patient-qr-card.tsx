@@ -7,10 +7,22 @@ import { Download, LoaderCircle, QrCode, Sparkles } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
+export function getScannableUrl(qrValue: string): string {
+  if (!qrValue) return '';
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    const token = qrValue.startsWith('QLU-PACIENTE:')
+      ? qrValue.slice('QLU-PACIENTE:'.length)
+      : qrValue;
+    return `${window.location.origin}/check-in?token=${encodeURIComponent(token)}`;
+  }
+  return qrValue;
+}
+
 export async function buildPatientCard(name: string, qrValue: string): Promise<string> {
   if (!qrValue) throw new Error('Valor de QR vacío');
+  const scannableValue = getScannableUrl(qrValue);
 
-  const qrDataUrl = await QRCode.toDataURL(qrValue, {
+  const qrDataUrl = await QRCode.toDataURL(scannableValue, {
     width: 430,
     margin: 2,
     errorCorrectionLevel: 'H',
@@ -124,10 +136,10 @@ export function PatientQrCard({ name, qrValue }: { name: string; qrValue: string
 
   useEffect(() => {
     let active = true;
-    if (!qrValue) return;
+    const scannableValue = getScannableUrl(qrValue);
 
     // 1. Inmediatamente generar el QR directo para visualización instantánea (0ms de espera)
-    void QRCode.toDataURL(qrValue, {
+    void QRCode.toDataURL(scannableValue, {
       width: 320,
       margin: 2,
       errorCorrectionLevel: 'H',
@@ -288,7 +300,7 @@ export function PatientQrCard({ name, qrValue }: { name: string; qrValue: string
         )}
       </div>
       <p className="mt-2.5 text-center text-[11px] text-muted-foreground">
-        Puedes enviarla por WhatsApp o imprimirla. El QR no expone datos sensibles.
+        Compatible con la cámara de cualquier celular (iPhone / Android) y con el lector de recepción. Puedes enviarlo por WhatsApp o imprimirlo.
       </p>
     </div>
   );

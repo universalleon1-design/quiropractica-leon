@@ -475,7 +475,7 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
               />
             ) : (
             <>
-              {view === 'scanner' && <QrScannerView onRegistered={() => void refresh()} />}
+              {view === 'scanner' && <QrScannerView onRegistered={() => void refresh()} patients={data.patients} />}
               {view === 'today' && (
                 <TodayView
                   data={data}
@@ -757,14 +757,22 @@ type CheckInResult = {
   demo?: boolean;
 };
 
-function QrScannerView({ onRegistered }: { onRegistered: () => void }) {
+function QrScannerView({
+  onRegistered,
+  patients = [],
+}: {
+  onRegistered: () => void;
+  patients?: Patient[];
+}) {
   const [cameraOpen, setCameraOpen] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<CheckInResult | null>(null);
+  const [manualInput, setManualInput] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const busyRef = useRef(false);
+  const scannerRef = useRef<{ start: () => Promise<void>; stop: () => void; destroy: () => void; pause: () => Promise<boolean> | boolean } | null>(null);
 
   useEffect(() => {
     const context = document.modelContext;
@@ -792,59 +800,106 @@ function QrScannerView({ onRegistered }: { onRegistered: () => void }) {
     return () => lifecycle.abort();
   }, []);
 
-  const registerQr = useCallback(async (qrValue: string) => {
-    if (busyRef.current) return;
-    busyRef.current = true;
-    setProcessing(true);
-    setError('');
-    try {
-      const response = await fetch('/api/admin/check-in', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ qrValue }),
-      });
-      const body = (await response.json()) as CheckInResult & { error?: string };
-      if (!response.ok) throw new Error(body.error || 'No se pudo registrar la llegada.');
-      setResult(body);
-      setCameraOpen(false);
-      onRegistered();
-    } catch (requestError) {
-      setError((requestError as Error).message);
-    } finally {
-      setProcessing(false);
-      busyRef.current = false;
-    }
-  }, [onRegistered]);
+  const registerQr = useCallback(
+    async (qrValue: string) => {
+      const trimmed = qrValue.trim();
+      if (!trimmed || busyRef.current) return;
+      busyRef.current = true;
+      setProcessing(true);
+      setError('');
+
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 8000);
+
+      try {
+        const response = await fetch('/api/admin/check-in', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ qrValue: trimmed }),
+          signal: controller.signal,
+        });
+        clearTimeout(timer);
+        const body = (await response.json()) as CheckInResult & { error?: string };
+        if (!response.ok) throw new Error(body.error || 'No se pudo registrar la llegada.');
+
+        try {
+          scannerRef.current?.stop();
+          scannerRef.current?.destroy();
+          scannerRef.current = null;
+        } catch {}
+
+        setResult(body);
+        setCameraOpen(false);
+        onRegistered();
+      } catch (requestError) {
+        clearTimeout(timer);
+        const isAbort = (requestError as Error).name === 'AbortError';
+        const msg = isAbort
+          ? 'Tiempo de espera agotado. Por favor intenta de nuevo.'
+          : ((requestError as Error).message || 'No se pudo registrar la llegada.');
+        setError(msg);
+        setTimeout(() => {
+          if (!result && scannerRef.current) {
+            try {
+              void scannerRef.current.start();
+            } catch {}
+          }
+        }, 2500);
+      } finally {
+        setProcessing(false);
+        busyRef.current = false;
+      }
+    },
+    [onRegistered, result],
+  );
 
   useEffect(() => {
     if (!cameraOpen || !videoRef.current) return;
-    let scanner: { start: () => Promise<void>; stop: () => void; destroy: () => void } | null = null;
     let cancelled = false;
 
     void import('qr-scanner').then(async ({ default: QrScanner }) => {
       if (cancelled || !videoRef.current) return;
-      scanner = new QrScanner(
+      try {
+        QrScanner.WORKER_PATH = '/qr-scanner-worker.min.js';
+      } catch {}
+
+      const instance = new QrScanner(
         videoRef.current,
-        (scanResult) => void registerQr(scanResult.data),
+        (scanResult) => {
+          const raw = typeof scanResult === 'string' ? scanResult : scanResult?.data;
+          if (raw && !busyRef.current) {
+            try {
+              instance.pause();
+            } catch {}
+            void registerQr(raw);
+          }
+        },
         {
           preferredCamera: 'environment',
           highlightScanRegion: true,
           highlightCodeOutline: true,
           maxScansPerSecond: 4,
+          returnDetailedScanResult: true,
         },
       );
+      scannerRef.current = instance;
+
       try {
-        await scanner.start();
-      } catch {
-        setError('No se pudo abrir la cámara. Revisa el permiso del navegador.');
+        await instance.start();
+      } catch (camErr) {
+        console.error('Camera start error:', camErr);
+        setError('No se pudo activar la cámara. Revisa los permisos o usa la búsqueda manual a la derecha.');
         setCameraOpen(false);
       }
     });
 
     return () => {
       cancelled = true;
-      scanner?.stop();
-      scanner?.destroy();
+      try {
+        scannerRef.current?.stop();
+        scannerRef.current?.destroy();
+        scannerRef.current = null;
+      } catch {}
     };
   }, [cameraOpen, registerQr]);
 
@@ -852,10 +907,11 @@ function QrScannerView({ onRegistered }: { onRegistered: () => void }) {
     setResult(null);
     setError('');
     setCameraOpen(false);
+    setManualInput('');
   }
 
   return (
-    <div ref={containerRef} className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
+    <div ref={containerRef} className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
       <Card className="overflow-hidden rounded-[2rem] border-0 bg-slate-950 text-white shadow-xl">
         <CardContent className="relative grid min-h-[620px] place-items-center p-6 text-center sm:p-9">
           {result ? (
@@ -864,31 +920,38 @@ function QrScannerView({ onRegistered }: { onRegistered: () => void }) {
                 {result.alreadyRegistered ? <Clock3 className="size-11" /> : <Check className="size-12 stroke-[3]" />}
               </span>
               <p className={`mt-8 text-sm font-bold uppercase tracking-[0.18em] ${result.alreadyRegistered ? 'text-amber-300' : 'text-emerald-300'}`}>
-                {result.alreadyRegistered ? 'Asistencia ya registrada' : 'Llegada registrada'}
+                {result.alreadyRegistered ? 'Asistencia ya registrada hoy' : '¡Llegada registrada con éxito!'}
               </p>
-              <h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl">{result.name}</h2>
+              <h2 className="mt-3 text-4xl font-black tracking-tight sm:text-5xl capitalize">{result.name}</h2>
               <div className="mx-auto mt-7 grid max-w-md grid-cols-2 gap-3 text-left">
                 <div className="rounded-2xl bg-white/10 p-4">
                   <p className="text-xs font-bold uppercase tracking-wider text-white/55">Hora</p>
-                  <p className="mt-2 text-xl font-black">{result.appointmentTime}</p>
+                  <p className="mt-2 text-xl font-black text-cyan-300">{result.appointmentTime}</p>
                 </div>
                 <div className="rounded-2xl bg-white/10 p-4">
                   <p className="text-xs font-bold uppercase tracking-wider text-white/55">Sesiones</p>
-                  <p className="mt-2 text-xl font-black">{result.used} de {result.total}</p>
+                  <p className="mt-2 text-xl font-black text-emerald-300">{result.used} de {result.total}</p>
                 </div>
               </div>
-              {result.walkIn && <p className="mx-auto mt-4 max-w-md rounded-xl bg-cyan-300/15 px-4 py-3 text-sm text-cyan-100">No tenía cita para hoy; se añadió como llegada sin cita.</p>}
-              <Button onClick={reset} className="mt-8 h-14 rounded-2xl bg-white px-7 text-base font-black text-slate-950 hover:bg-white/90">
-                <QrCode className="size-5" /> Escanear otro paciente
+              {result.walkIn && <p className="mx-auto mt-4 max-w-md rounded-xl bg-cyan-300/15 px-4 py-3 text-sm text-cyan-100">No tenía cita agendada para hoy; se registró como llegada espontánea.</p>}
+              <Button onClick={reset} className="mt-8 h-14 rounded-2xl bg-white px-7 text-base font-black text-slate-950 hover:bg-white/90 shadow-lg">
+                <QrCode className="size-5 mr-2" /> Escanear otro paciente
               </Button>
             </div>
           ) : cameraOpen ? (
             <div className="w-full max-w-lg">
               <p className="text-sm font-bold uppercase tracking-[0.18em] text-cyan-300">Cámara activa</p>
               <h2 className="mt-3 text-3xl font-black">Apunta al QR del paciente</h2>
-              <div className="relative mx-auto mt-7 aspect-[4/5] max-h-[430px] overflow-hidden rounded-[1.75rem] border-2 border-cyan-300/50 bg-black">
+              <div className="relative mx-auto mt-7 aspect-[4/5] max-h-[430px] overflow-hidden rounded-[1.75rem] border-2 border-cyan-300/50 bg-black shadow-inner">
                 <video ref={videoRef} className="h-full w-full object-cover" muted playsInline />
-                {processing && <div className="absolute inset-0 grid place-items-center bg-slate-950/75"><LoaderCircle className="size-10 animate-spin text-cyan-300" /></div>}
+                {processing && (
+                  <div className="absolute inset-0 grid place-items-center bg-slate-950/80 backdrop-blur-xs">
+                    <div className="text-center space-y-2">
+                      <LoaderCircle className="size-11 animate-spin text-cyan-300 mx-auto" />
+                      <p className="text-sm font-bold text-cyan-200">Verificando paciente...</p>
+                    </div>
+                  </div>
+                )}
               </div>
               <Button variant="outline" onClick={() => setCameraOpen(false)} className="mt-5 h-12 rounded-xl border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white">
                 Cancelar
@@ -896,34 +959,112 @@ function QrScannerView({ onRegistered }: { onRegistered: () => void }) {
             </div>
           ) : (
             <div>
-              <span className="mx-auto grid size-24 place-items-center rounded-[2rem] bg-cyan-300 text-slate-950">
+              <span className="mx-auto grid size-24 place-items-center rounded-[2rem] bg-cyan-300 text-slate-950 shadow-lg shadow-cyan-300/20">
                 <Camera className="size-11" />
               </span>
               <p className="mt-8 text-sm font-bold uppercase tracking-[0.18em] text-cyan-300">Control de asistencia</p>
               <h2 className="mt-3 text-4xl font-black tracking-tight">Escanea la tarjeta del paciente</h2>
               <p className="mx-auto mt-4 max-w-md text-base leading-7 text-white/65">
-                El paciente solo muestra el QR recibido por WhatsApp o impreso. No necesita abrir ninguna aplicación.
+                Apunta con la cámara al código QR de la tarjeta digital o impresa. El paciente también puede escanearlo con la cámara de su propio celular.
               </p>
-              <Button onClick={() => { setError(''); setCameraOpen(true); }} className="mt-8 h-14 rounded-2xl bg-cyan-300 px-7 text-base font-black text-slate-950 hover:bg-cyan-200">
-                <Camera className="size-5" /> Abrir cámara
+              <Button onClick={() => { setError(''); setCameraOpen(true); }} className="mt-8 h-14 rounded-2xl bg-cyan-300 px-8 text-base font-black text-slate-950 hover:bg-cyan-200 shadow-lg shadow-cyan-300/25">
+                <Camera className="size-5 mr-2" /> Abrir cámara
               </Button>
             </div>
           )}
-          {error && <p role="alert" className="absolute bottom-7 mx-6 rounded-xl bg-red-500/15 px-4 py-3 text-sm font-semibold text-red-100">{error}</p>}
+          {error && <p role="alert" className="absolute bottom-6 mx-6 rounded-xl bg-red-500/20 border border-red-500/30 px-4 py-3 text-sm font-semibold text-red-200">{error}</p>}
         </CardContent>
       </Card>
 
-      <div className="space-y-5">
-        <Card className="rounded-3xl border-0 shadow-sm">
-          <CardContent className="p-6">
-            <p className="text-sm font-bold text-cyan-800">Cómo funciona</p>
-            <ol className="mt-5 space-y-5">
-              {['El paciente muestra su tarjeta.', 'Escaneas el QR con este lector.', 'La llegada aparece en la agenda.'].map((label, index) => (
-                <li key={label} className="flex gap-3 text-sm leading-6">
-                  <span className="grid size-7 shrink-0 place-items-center rounded-full bg-slate-950 text-xs font-black text-white">{index + 1}</span>
-                  <span>{label}</span>
-                </li>
-              ))}
+      <div className="space-y-4">
+        {/* Manual check-in card */}
+        <Card className="rounded-3xl border-0 shadow-sm bg-white">
+          <CardContent className="p-5 space-y-3.5">
+            <div className="flex items-center gap-2.5">
+              <span className="grid size-9 place-items-center rounded-xl bg-cyan-700 text-white shadow-xs">
+                <Search className="size-4" />
+              </span>
+              <div>
+                <h3 className="font-black text-sm text-slate-900">Registro Manual</h3>
+                <p className="text-xs text-muted-foreground">Alternativa rápida sin cámara</p>
+              </div>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (manualInput.trim()) {
+                  void registerQr(manualInput.trim());
+                }
+              }}
+              className="space-y-2.5"
+            >
+              <Input
+                placeholder="Nombre, teléfono o código..."
+                value={manualInput}
+                onChange={(e) => setManualInput(e.target.value)}
+                className="h-10 text-xs sm:text-sm rounded-xl"
+              />
+
+              <Button
+                type="submit"
+                disabled={!manualInput.trim() || processing}
+                className="w-full h-10 rounded-xl font-bold text-xs bg-slate-900 text-white hover:bg-slate-800"
+              >
+                {processing ? <LoaderCircle className="size-4 animate-spin mr-1.5" /> : <Check className="size-4 mr-1.5" />}
+                Registrar Llegada
+              </Button>
+            </form>
+
+            {manualInput.trim().length > 1 && (
+              <div className="space-y-1.5 max-h-48 overflow-y-auto pt-1 border-t">
+                {patients
+                  .filter((p) =>
+                    p.name.toLowerCase().includes(manualInput.toLowerCase()) ||
+                    (p.phone && p.phone.includes(manualInput))
+                  )
+                  .slice(0, 5)
+                  .map((p) => (
+                    <div
+                      key={p.id}
+                      className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border hover:bg-cyan-50 transition text-xs"
+                    >
+                      <div className="min-w-0 pr-2">
+                        <strong className="block truncate text-slate-900 capitalize font-bold">{p.name}</strong>
+                        <span className="text-[11px] text-muted-foreground">Sesiones: {p.used}/{p.total}</span>
+                      </div>
+                      <Button
+                        size="sm"
+                        disabled={processing || !p.qrValue}
+                        onClick={() => p.qrValue && void registerQr(p.qrValue)}
+                        className="h-8 px-2.5 text-xs font-bold bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg shrink-0"
+                      >
+                        Llegó
+                      </Button>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* How it works card */}
+        <Card className="rounded-3xl border-0 shadow-sm bg-white">
+          <CardContent className="p-5">
+            <p className="text-xs font-black uppercase tracking-wider text-cyan-900">¿Cómo funciona?</p>
+            <ol className="mt-3 space-y-3 text-xs leading-5 text-slate-600">
+              <li className="flex gap-2.5">
+                <span className="grid size-5 shrink-0 place-items-center rounded-full bg-slate-900 text-[10px] font-black text-white">1</span>
+                <span><strong>Con cámara de celular:</strong> El paciente o personal abre la cámara de su celular y apunta al QR. Al tocar el enlace, se registra de inmediato.</span>
+              </li>
+              <li className="flex gap-2.5">
+                <span className="grid size-5 shrink-0 place-items-center rounded-full bg-slate-900 text-[10px] font-black text-white">2</span>
+                <span><strong>Con lector del panel:</strong> Pulsa <em>Abrir cámara</em> y muestra la tarjeta.</span>
+              </li>
+              <li className="flex gap-2.5">
+                <span className="grid size-5 shrink-0 place-items-center rounded-full bg-slate-900 text-[10px] font-black text-white">3</span>
+                <span><strong>Manual:</strong> Si la cámara no responde, escribe el nombre del paciente arriba y pulsa <em>Llegó</em>.</span>
+              </li>
             </ol>
           </CardContent>
         </Card>
