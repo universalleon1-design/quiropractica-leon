@@ -65,6 +65,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
@@ -274,22 +280,22 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
   return (
     <SidebarProvider>
       <Sidebar collapsible="offcanvas" className="border-r-0">
-        <SidebarHeader className="px-4 pb-5 pt-5">
+        <SidebarHeader className="px-4 pb-3 pt-4">
           <div className="flex items-center gap-3 px-1">
-            <span className="grid size-10 place-items-center rounded-2xl bg-cyan-300 text-slate-950">
+            <span className="grid size-10 place-items-center rounded-2xl bg-cyan-300 text-slate-950 shadow-sm">
               <Sparkles className="size-5" />
             </span>
             <div>
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-sidebar-foreground/55">Quiropráctica</p>
-              <p className="font-bold tracking-tight">León Universal</p>
+              <p className="text-[0.72rem] font-bold uppercase tracking-[0.16em] text-sidebar-foreground/60">Quiropráctica</p>
+              <p className="text-base font-black tracking-tight text-white">León Universal</p>
             </div>
           </div>
         </SidebarHeader>
-        <SidebarContent>
+        <SidebarContent className="pb-4">
           <SidebarGroup>
-            <SidebarGroupLabel>Gestión</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-xs font-bold uppercase tracking-wider text-sidebar-foreground/60 px-3">Gestión</SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>
+              <SidebarMenu className="gap-1">
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -300,9 +306,9 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
                           setPatientOpen(null);
                           setView(item.id);
                         }}
-                        className="h-11 rounded-xl px-3"
+                        className="h-11 rounded-xl px-3.5 text-[15px] font-bold tracking-normal gap-3 hover:bg-white/10"
                       >
-                        <Icon />
+                        <Icon className="size-5" />
                         <span>{item.label}</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -312,31 +318,31 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter className="p-4">
-          <div className="rounded-2xl bg-sidebar-accent p-3">
-            <div className="flex items-center gap-3">
-              <span className="grid size-9 place-items-center rounded-xl bg-cyan-300 text-sm font-black text-slate-950">
+        <SidebarFooter className="p-3">
+          <div className="flex items-center justify-between rounded-2xl bg-sidebar-accent/80 p-2.5 border border-white/5 shadow-xs">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-cyan-300 text-sm font-black text-slate-950">
                 {user.name.charAt(0).toUpperCase()}
               </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">Profesional</p>
-                <p className="truncate text-xs text-sidebar-foreground/55">{user.email}</p>
+              <div className="min-w-0">
+                <p className="truncate text-xs font-bold text-white">Profesional</p>
+                <p className="truncate text-[11px] text-sidebar-foreground/60">{user.email}</p>
               </div>
             </div>
             {/* oxlint-disable-next-line next/no-html-link-for-pages -- sign-out must be a top-level browser navigation */}
             <a
               href="/signout-with-chatgpt?return_to=%2F"
-              className="mt-3 flex h-9 items-center justify-center gap-2 rounded-xl border border-sidebar-border text-xs font-semibold transition hover:bg-white/5"
+              title="Cerrar sesión"
+              className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-sidebar-border bg-white/5 text-sidebar-foreground/80 hover:bg-white/15 hover:text-white transition"
             >
-              <LogOut className="size-3.5" />
-              Cerrar sesión
+              <LogOut className="size-4" />
             </a>
           </div>
         </SidebarFooter>
       </Sidebar>
 
-      <SidebarInset className="min-w-0 bg-[#f5f8f8]">
-        <header className="sticky top-0 z-20 flex h-[76px] items-center justify-between border-b border-border bg-white/85 px-4 backdrop-blur-xl sm:px-7">
+      <SidebarInset className="min-w-0 bg-[#f5f8f8] text-[15px]">
+        <header className="sticky top-0 z-20 flex h-[76px] items-center justify-between border-b border-border bg-white/90 px-4 backdrop-blur-xl sm:px-7">
           <div className="flex items-center gap-3">
             <SidebarTrigger className="md:hidden" />
             {patientOpen && (
@@ -344,40 +350,40 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
                 variant="outline"
                 size="sm"
                 onClick={() => setPatientOpen(null)}
-                className="mr-1 h-9 rounded-xl px-3 font-bold text-xs hover:bg-slate-100"
+                className="mr-1 h-10 rounded-xl px-3.5 font-bold text-sm hover:bg-slate-100"
               >
-                <ArrowLeft className="mr-1.5 size-3.5" /> Volver
+                <ArrowLeft className="mr-1.5 size-4" /> Volver
               </Button>
             )}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.13em] text-muted-foreground">
+              <p className="text-xs sm:text-sm font-extrabold uppercase tracking-[0.13em] text-muted-foreground">
                 {patientOpen ? 'Expediente del paciente' : 'Panel profesional'}
               </p>
-              <h1 className="text-xl font-black tracking-tight">{patientOpen ? patientOpen.name : title}</h1>
+              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-950">{patientOpen ? patientOpen.name : title}</h1>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setAlarmsOpen(true)}
               className={cn(
-                'relative h-10 rounded-xl px-3 font-bold text-xs transition border',
+                'relative h-11 rounded-xl px-3.5 font-bold text-sm transition border',
                 activeAlerts.length > 0
                   ? 'border-amber-400 bg-amber-50 text-amber-950 hover:bg-amber-100 shadow-xs'
                   : 'border-border hover:bg-slate-100 text-slate-700'
               )}
             >
               {activeAlerts.length > 0 ? (
-                <BellRing className="size-4 text-amber-600 animate-bounce" />
+                <BellRing className="size-4.5 text-amber-600 animate-bounce" />
               ) : (
-                <Bell className="size-4 text-cyan-800" />
+                <Bell className="size-4.5 text-cyan-800" />
               )}
-              <span className="hidden sm:inline ml-1.5">Alarmas</span>
+              <span className="ml-1.5">Alarmas</span>
               {upcomingAppointments.filter((i) => i.status === 'scheduled').length > 0 && (
                 <span
                   className={cn(
-                    'ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-black',
+                    'ml-1 px-1.5 py-0.5 rounded-full text-xs font-black',
                     activeAlerts.length > 0
                       ? 'bg-rose-600 text-white animate-pulse'
                       : 'bg-slate-900 text-white'
@@ -390,11 +396,20 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
               )}
             </Button>
 
-            {view !== 'scanner' && view !== 'new-patient' && !patientOpen && (
-              <Button onClick={() => setView('new-patient')} className="h-10 sm:h-11 rounded-xl px-4 font-bold">
-                <UserPlus className="size-4" />
-                <span className="hidden sm:inline">Nuevo paciente</span>
-                <span className="sm:hidden">Nuevo</span>
+            {view === 'supplements' && !patientOpen && (
+              <Button
+                onClick={() => setSupplementOpen(true)}
+                className="h-11 rounded-xl px-4 font-bold text-sm bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm flex items-center gap-2"
+              >
+                <Plus className="size-4.5" />
+                <span>Registrar suplemento</span>
+              </Button>
+            )}
+
+            {view !== 'scanner' && view !== 'new-patient' && view !== 'supplements' && !patientOpen && (
+              <Button onClick={() => setView('new-patient')} className="h-11 rounded-xl px-4.5 font-bold text-sm flex items-center gap-2 shadow-sm">
+                <UserPlus className="size-4.5" />
+                <span>Nuevo paciente</span>
               </Button>
             )}
           </div>
@@ -937,10 +952,10 @@ function TodayView({
     <div className="space-y-6">
       <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-end">
         <div>
-          <p className="text-sm font-semibold text-cyan-800">Resumen diario</p>
-          <h2 className="mt-1 text-3xl font-black tracking-[-0.035em]">Tu consulta, de un vistazo.</h2>
+          <p className="text-base font-bold text-cyan-800">Resumen diario</p>
+          <h2 className="mt-1 text-3xl sm:text-4xl font-black tracking-tight text-slate-950">Tu consulta, de un vistazo.</h2>
         </div>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-base font-semibold text-slate-600">
           {new Intl.DateTimeFormat('es-PE', { dateStyle: 'full' }).format(new Date())}
         </p>
       </div>
@@ -950,13 +965,13 @@ function TodayView({
           const Icon = card.icon;
           return (
             <Card key={card.label} className={`rounded-3xl border-0 shadow-sm ${card.tone}`}>
-              <CardContent className="flex items-start justify-between p-5">
+              <CardContent className="flex items-start justify-between p-5 sm:p-6">
                 <div>
-                  <p className="text-sm font-medium opacity-65">{card.label}</p>
-                  <p className="mt-3 text-4xl font-black tracking-tight">{card.value}</p>
+                  <p className="text-base font-bold opacity-80">{card.label}</p>
+                  <p className="mt-2 text-4xl sm:text-5xl font-black tracking-tight">{card.value}</p>
                 </div>
-                <span className="grid size-10 place-items-center rounded-2xl bg-current/10">
-                  <Icon className="size-5" />
+                <span className="grid size-12 place-items-center rounded-2xl bg-current/10">
+                  <Icon className="size-6" />
                 </span>
               </CardContent>
             </Card>
@@ -966,46 +981,46 @@ function TodayView({
 
       <div className="grid gap-6 xl:grid-cols-[1.5fr_0.75fr]">
         <Card className="rounded-3xl border-0 shadow-sm">
-          <CardHeader className="flex-row items-center justify-between px-5 pb-2 sm:px-6">
+          <CardHeader className="flex-row items-center justify-between px-5 pb-3 sm:px-6">
             <div>
-              <CardTitle className="text-xl font-extrabold">Agenda de hoy</CardTitle>
-              <p className="mt-1 text-sm text-muted-foreground">Las llegadas aparecen automáticamente.</p>
+              <CardTitle className="text-2xl font-black text-slate-900">Agenda de hoy</CardTitle>
+              <p className="mt-1 text-base text-slate-600 font-medium">Las llegadas aparecen automáticamente.</p>
             </div>
-            <Badge variant="secondary" className="rounded-full">{data.schedule.length} citas</Badge>
+            <Badge variant="secondary" className="rounded-full text-sm font-bold px-3 py-1">{data.schedule.length} citas</Badge>
           </CardHeader>
           <CardContent className="px-3 pb-3 sm:px-4">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead>Hora</TableHead>
-                  <TableHead>Paciente</TableHead>
-                  <TableHead>Sesiones</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="text-right">Acción</TableHead>
+                  <TableHead className="text-base font-black text-slate-900 py-3.5">Hora</TableHead>
+                  <TableHead className="text-base font-black text-slate-900 py-3.5">Paciente</TableHead>
+                  <TableHead className="text-base font-black text-slate-900 py-3.5">Sesiones</TableHead>
+                  <TableHead className="text-base font-black text-slate-900 py-3.5">Estado</TableHead>
+                  <TableHead className="text-right text-base font-black text-slate-900 py-3.5">Acción</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data.schedule.map((item) => {
                   const status = statusLabels[item.status] ?? statusLabels.scheduled;
                   return (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-bold">{item.time}</TableCell>
+                    <TableRow key={item.id} className="h-16">
+                      <TableCell className="text-base sm:text-lg font-black text-slate-900">{item.time}</TableCell>
                       <TableCell>
-                        <button className="font-semibold hover:underline" onClick={() => onPatient({ id: item.patientId, name: item.name, phone: null, used: item.used, total: item.total })}>
+                        <button className="text-base sm:text-lg font-bold text-slate-950 hover:text-cyan-800 hover:underline text-left" onClick={() => onPatient({ id: item.patientId, name: item.name, phone: null, used: item.used, total: item.total })}>
                           {item.name}
                         </button>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{item.used} de {item.total}</TableCell>
-                      <TableCell><Badge className={`rounded-full border-0 ${status.className}`}>{status.label}</Badge></TableCell>
+                      <TableCell className="text-base font-bold text-slate-600">{item.used} de {item.total}</TableCell>
+                      <TableCell><Badge className={`rounded-full border-0 text-xs sm:text-sm font-black px-3.5 py-1 ${status.className}`}>{status.label}</Badge></TableCell>
                       <TableCell className="text-right">
                         {item.status === 'checked_in' && (
-                          <Button size="sm" variant="outline" className="rounded-lg" onClick={() => void onStatusChange(item.id, 'in_session')}>Atender</Button>
+                          <Button size="sm" variant="outline" className="h-10 rounded-xl px-4 text-sm font-bold" onClick={() => void onStatusChange(item.id, 'in_session')}>Atender</Button>
                         )}
                         {item.status === 'in_session' && (
-                          <Button size="sm" className="rounded-lg bg-emerald-700 hover:bg-emerald-800" onClick={() => void onStatusChange(item.id, 'completed')}>Completar</Button>
+                          <Button size="sm" className="h-10 rounded-xl px-4 text-sm font-bold bg-emerald-700 hover:bg-emerald-800 text-white" onClick={() => void onStatusChange(item.id, 'completed')}>Completar</Button>
                         )}
-                        {item.status === 'scheduled' && <span className="text-xs text-muted-foreground">En espera</span>}
-                        {item.status === 'completed' && <Check className="ml-auto size-5 text-emerald-700" />}
+                        {item.status === 'scheduled' && <span className="text-sm font-semibold text-slate-500">En espera</span>}
+                        {item.status === 'completed' && <Check className="ml-auto size-6 text-emerald-700" />}
                       </TableCell>
                     </TableRow>
                   );
@@ -1020,22 +1035,22 @@ function TodayView({
           return (
             <Card className="rounded-3xl border-0 bg-primary text-primary-foreground shadow-sm">
               <CardHeader>
-                <CardTitle className="text-xl font-extrabold">Próxima atención</CardTitle>
+                <CardTitle className="text-2xl font-black text-white">Próxima atención</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-4xl font-black">{nextItem?.time ?? '--:--'}</p>
-                <p className="mt-2 text-lg font-bold">{nextItem?.name ?? 'Sin citas registradas'}</p>
+              <CardContent className="space-y-4">
+                <p className="text-5xl sm:text-6xl font-black text-cyan-300">{nextItem?.time ?? '--:--'}</p>
+                <p className="text-2xl font-extrabold text-white">{nextItem?.name ?? 'Sin citas registradas'}</p>
                 {nextItem && (
-                  <Badge className="mt-3 rounded-full bg-cyan-300 text-slate-950 hover:bg-cyan-300">
+                  <Badge className="mt-2 rounded-full bg-cyan-300 text-slate-950 font-black text-sm px-3.5 py-1 hover:bg-cyan-300">
                     {statusLabels[nextItem.status]?.label ?? 'Programada'}
                   </Badge>
                 )}
-                <div className="mt-8 rounded-2xl bg-white/10 p-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-white/65">Plan actual</span>
-                    <strong>{nextItem ? `${nextItem.used} de ${nextItem.total}` : '-'}</strong>
+                <div className="mt-6 rounded-2xl bg-white/10 p-5">
+                  <div className="flex justify-between text-base font-bold">
+                    <span className="text-white/70">Plan de tratamiento</span>
+                    <strong className="text-white">{nextItem ? `${nextItem.used} de ${nextItem.total} sesiones` : '-'}</strong>
                   </div>
-                  <Progress value={nextItem?.total ? (nextItem.used / nextItem.total) * 100 : 0} className="mt-3 bg-white/15" />
+                  <Progress value={nextItem?.total ? (nextItem.used / nextItem.total) * 100 : 0} className="mt-3 bg-white/15 h-3" />
                 </div>
                 <Button
                   onClick={() => {
@@ -1099,38 +1114,38 @@ function PatientsView({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <h2 className="text-3xl font-black tracking-tight">Pacientes</h2>
-          <p className="mt-1 text-muted-foreground">Expedientes, sesiones y evolución clínica.</p>
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-950">Pacientes</h2>
+          <p className="mt-1 text-base text-slate-600 font-medium">Expedientes, sesiones y evolución clínica.</p>
         </div>
-        <Button onClick={onNew} className="h-11 rounded-xl font-bold"><Plus className="mr-1.5 size-4" /> Registrar paciente</Button>
+        <Button onClick={onNew} className="h-12 px-5 rounded-xl font-bold text-base shadow-sm"><Plus className="mr-2 size-5" /> Registrar paciente</Button>
       </div>
       <Card className="rounded-3xl border-0 shadow-sm">
         <CardHeader className="pb-3">
           <div className="relative max-w-md">
-            <Search className="absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar paciente…" className="h-12 rounded-xl bg-muted/60 pl-11" />
+            <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-slate-400" />
+            <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar paciente por nombre…" className="h-13 rounded-2xl bg-muted/60 pl-12 text-base font-medium" />
           </div>
         </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <CardContent className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((patient) => (
             <div
               key={patient.id}
-              className="group relative flex flex-col justify-between rounded-2xl border border-border bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-md"
+              className="group relative flex flex-col justify-between rounded-2xl border border-border bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-cyan-300 hover:shadow-md"
             >
               <div className="flex items-start justify-between gap-2">
                 <div
                   onClick={() => onPatient(patient)}
-                  className="flex flex-1 cursor-pointer items-start gap-3 min-w-0"
+                  className="flex flex-1 cursor-pointer items-start gap-3.5 min-w-0"
                 >
-                  <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-cyan-100 font-black text-cyan-900">
+                  <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-cyan-100 text-base font-black text-cyan-900 shadow-xs">
                     {patient.name.split(' ').map((part) => part[0]).slice(0, 2).join('')}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <span className="block truncate font-bold text-slate-900 group-hover:text-cyan-800">{patient.name}</span>
-                    <span className="mt-0.5 block text-sm text-muted-foreground">{patient.phone || 'Sin teléfono'}</span>
+                    <span className="block truncate text-lg sm:text-xl font-black text-slate-900 group-hover:text-cyan-800">{patient.name}</span>
+                    <span className="mt-1 block text-base font-semibold text-slate-600">{patient.phone || 'Sin teléfono registrado'}</span>
                   </div>
                 </div>
 
@@ -1141,28 +1156,28 @@ function PatientsView({
                         size="icon"
                         variant="ghost"
                         disabled={deletingId === patient.id}
-                        className="size-8 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600 transition"
+                        className="size-9 rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-600 transition"
                         title="Eliminar paciente"
                       />
                     }>
                       {deletingId === patient.id ? (
-                        <LoaderCircle className="size-4 animate-spin text-red-600" />
+                        <LoaderCircle className="size-4.5 animate-spin text-red-600" />
                       ) : (
-                        <Trash2 className="size-4" />
+                        <Trash2 className="size-4.5" />
                       )}
                     </AlertDialogTrigger>
                     <AlertDialogContent className="rounded-3xl">
                       <AlertDialogHeader>
-                        <AlertDialogTitle className="text-xl font-bold">¿Eliminar a {patient.name}?</AlertDialogTitle>
-                        <AlertDialogDescription>
+                        <AlertDialogTitle className="text-2xl font-black text-slate-950">¿Eliminar a {patient.name}?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-base text-slate-600">
                           Se borrarán su expediente, citas, asistencias, pagos, fotos y ficha de evaluación. Esta acción no se puede deshacer.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+                        <AlertDialogCancel className="h-11 rounded-xl text-base font-bold">Cancelar</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={() => void handleDelete(patient.id)}
-                          className="rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold"
+                          className="h-11 rounded-xl bg-red-600 hover:bg-red-700 text-white text-base font-bold"
                         >
                           Sí, eliminar
                         </AlertDialogAction>
@@ -1174,7 +1189,7 @@ function PatientsView({
                     size="icon"
                     variant="ghost"
                     onClick={() => onPatient(patient)}
-                    className="size-8 rounded-lg text-muted-foreground hover:text-slate-900"
+                    className="size-9 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-100"
                     title="Abrir expediente"
                   >
                     <ChevronRight className="size-5" />
@@ -1183,35 +1198,35 @@ function PatientsView({
               </div>
 
               <div
-                className="mt-4 cursor-pointer"
+                className="mt-5 cursor-pointer"
                 onClick={() => onPatient(patient)}
               >
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Plan de sesiones</span>
-                  <strong>{patient.used} / {patient.total}</strong>
+                <div className="flex justify-between text-base font-bold">
+                  <span className="text-slate-600">Plan de sesiones</span>
+                  <strong className="text-slate-950">{patient.used} / {patient.total}</strong>
                 </div>
-                <Progress value={patient.total ? (patient.used / patient.total) * 100 : 0} className="mt-2" />
+                <Progress value={patient.total ? (patient.used / patient.total) * 100 : 0} className="mt-2.5 h-2.5" />
               </div>
 
-              <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                <span className="text-muted-foreground font-medium">Expediente Clínico</span>
+              <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between text-sm">
+                <span className="text-slate-500 font-semibold">Expediente Clínico</span>
                 <button
                   type="button"
                   onClick={() => onPatient(patient)}
-                  className="font-bold text-cyan-800 hover:text-cyan-950 flex items-center gap-1 transition"
+                  className="font-black text-cyan-800 hover:text-cyan-950 flex items-center gap-1 text-sm sm:text-base transition"
                 >
-                  Ver resumen <ChevronRight className="size-3.5" />
+                  Ver resumen <ChevronRight className="size-4" />
                 </button>
               </div>
             </div>
           ))}
           {filtered.length === 0 && (
-            <div className="col-span-full py-12 text-center text-muted-foreground">
-              <Users className="mx-auto size-12 opacity-30 text-cyan-800" />
-              <p className="mt-3 font-semibold text-slate-800">No hay pacientes registrados</p>
-              <p className="text-sm mt-1">Registra a tu primer paciente para llevar su ficha clínica y control de asistencia.</p>
-              <Button onClick={onNew} className="mt-4 rounded-xl font-bold">
-                <Plus className="mr-1.5 size-4" /> Registrar paciente
+            <div className="col-span-full py-16 text-center text-muted-foreground">
+              <Users className="mx-auto size-14 opacity-30 text-cyan-800" />
+              <p className="mt-4 text-xl font-bold text-slate-800">No hay pacientes registrados</p>
+              <p className="text-base mt-1">Registra a tu primer paciente para llevar su ficha clínica y control de asistencia.</p>
+              <Button onClick={onNew} className="mt-5 h-12 px-6 rounded-xl font-bold text-base">
+                <Plus className="mr-2 size-5" /> Registrar paciente
               </Button>
             </div>
           )}
@@ -1224,21 +1239,34 @@ function PatientsView({
 function CalendarView({ schedule }: { schedule: ScheduleItem[] }) {
   const hours = ['8:00 a. m.', '9:00 a. m.', '10:00 a. m.', '11:00 a. m.', '12:00 p. m.', '1:00 p. m.', '2:00 p. m.', '3:00 p. m.', '4:00 p. m.', '5:00 p. m.'];
   return (
-    <div className="space-y-5">
-      <div><h2 className="text-3xl font-black tracking-tight">Agenda</h2><p className="mt-1 text-muted-foreground">Horario disponible de 8:00 a. m. a 9:00 p. m.</p></div>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-950">Agenda</h2>
+        <p className="mt-1 text-base text-slate-600 font-medium">Horario disponible de 8:00 a. m. a 9:00 p. m.</p>
+      </div>
       <Card className="overflow-hidden rounded-3xl border-0 shadow-sm">
-        <CardHeader className="border-b"><CardTitle className="flex items-center justify-between"><span>Hoy</span><Badge variant="secondary">{schedule.length} citas</Badge></CardTitle></CardHeader>
+        <CardHeader className="border-b px-6 py-4">
+          <CardTitle className="flex items-center justify-between text-2xl font-black text-slate-950">
+            <span>Hoy</span>
+            <Badge variant="secondary" className="text-sm font-bold px-3 py-1">{schedule.length} citas</Badge>
+          </CardTitle>
+        </CardHeader>
         <CardContent className="p-0">
           {hours.map((hour, index) => {
             const item = schedule[index];
             return (
-              <div key={hour} className="grid min-h-16 grid-cols-[110px_1fr] border-b last:border-0">
-                <div className="border-r px-4 py-4 text-sm font-semibold text-muted-foreground">{hour}</div>
-                <div className="p-2">
+              <div key={hour} className="grid min-h-18 grid-cols-[130px_1fr] border-b last:border-0">
+                <div className="border-r px-5 py-4 text-base font-bold text-slate-700 flex items-center">{hour}</div>
+                <div className="p-2.5">
                   {item && (
-                    <div className="flex h-full items-center justify-between rounded-xl border-l-4 border-cyan-500 bg-cyan-50 px-4 py-2">
-                      <div><p className="font-bold">{item.name}</p><p className="text-xs text-muted-foreground">Sesión quiropráctica · {item.time}</p></div>
-                      <Badge className={`border-0 ${statusLabels[item.status]?.className}`}>{statusLabels[item.status]?.label}</Badge>
+                    <div className="flex h-full items-center justify-between rounded-2xl border-l-4 border-cyan-500 bg-cyan-50/80 px-5 py-3">
+                      <div>
+                        <p className="text-base sm:text-lg font-black text-cyan-950">{item.name}</p>
+                        <p className="text-sm font-semibold text-cyan-800">Sesión quiropráctica · {item.time}</p>
+                      </div>
+                      <Badge className={`border-0 text-xs sm:text-sm font-black px-3.5 py-1 ${statusLabels[item.status]?.className}`}>
+                        {statusLabels[item.status]?.label}
+                      </Badge>
                     </div>
                   )}
                 </div>
@@ -1253,34 +1281,74 @@ function CalendarView({ schedule }: { schedule: ScheduleItem[] }) {
 
 function SupplementsView({ patients, onNew }: { patients: Patient[]; onNew: () => void }) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div><h2 className="text-3xl font-black tracking-tight">Suplementos</h2><p className="mt-1 text-muted-foreground">Productos recomendados y seguimiento por paciente.</p></div>
-        <Button onClick={onNew} className="h-11 rounded-xl"><Plus /> Registrar recomendación</Button>
+        <div>
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-950">Suplementos</h2>
+          <p className="mt-1 text-base text-slate-600 font-medium">Productos recomendados y seguimiento por paciente.</p>
+        </div>
+        <Button onClick={onNew} className="h-12 px-6 rounded-xl font-bold text-base bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm">
+          <Plus className="mr-2 size-5" /> Registrar recomendación
+        </Button>
       </div>
-      <div className="grid gap-5 lg:grid-cols-[1.25fr_0.75fr]">
+      <div className="grid gap-6 lg:grid-cols-[1.25fr_0.75fr]">
         <Card className="rounded-3xl border-0 shadow-sm">
-          <CardHeader><CardTitle>Recomendaciones recientes</CardTitle></CardHeader>
-          <CardContent className="space-y-3">
+          <CardHeader className="px-6 pt-6 pb-2">
+            <CardTitle className="text-2xl font-black text-slate-900">Recomendaciones recientes</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3.5 p-6">
             {[
               ['Luis Vargas', 'Fórmula herbal B-12', '2 cápsulas después del desayuno'],
               ['Ana Torres', 'Complejo de ginseng', '1 cápsula por la mañana'],
               ['Rosa Medina', 'Extracto de cúrcuma', '1 cápsula con alimentos'],
             ].map(([patient, supplement, instruction]) => (
-              <div key={patient} className="flex items-start gap-4 rounded-2xl border p-4">
-                <span className="grid size-11 place-items-center rounded-2xl bg-emerald-100 text-emerald-800"><Leaf className="size-5" /></span>
-                <div className="min-w-0 flex-1"><p className="font-bold">{supplement}</p><p className="mt-0.5 text-sm text-muted-foreground">{patient} · {instruction}</p></div>
-                <Button variant="ghost" size="icon-sm" aria-label={`Más opciones para ${supplement}`}><MoreHorizontal /></Button>
+              <div key={patient} className="flex items-center gap-4 rounded-2xl border p-4.5 hover:border-emerald-300 transition bg-white shadow-xs">
+                <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-emerald-100 text-emerald-800">
+                  <Leaf className="size-6" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-lg sm:text-xl font-black text-slate-900">{supplement}</p>
+                  <p className="mt-1 text-base font-semibold text-slate-600">{patient} · <span className="font-normal text-slate-700">{instruction}</span></p>
+                </div>
+                {/* Menu del lado derecho con opciones reales y legibles */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger render={
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="size-10 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition"
+                      aria-label={`Opciones para ${supplement}`}
+                    >
+                      <MoreHorizontal className="size-5" />
+                    </Button>
+                  } />
+                  <DropdownMenuContent align="end" className="w-56 rounded-2xl p-1.5 shadow-xl border bg-white z-50">
+                    <DropdownMenuItem
+                      className="cursor-pointer rounded-xl px-3.5 py-2.5 text-sm font-bold flex items-center gap-2.5 hover:bg-emerald-50 hover:text-emerald-900 text-slate-800"
+                      onClick={() => onNew()}
+                    >
+                      <Plus className="size-4 text-emerald-700" /> Nueva prescripción
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="cursor-pointer rounded-xl px-3.5 py-2.5 text-sm font-bold flex items-center gap-2.5 hover:bg-slate-100 text-slate-700"
+                      onClick={() => alert(`Detalles del suplemento:\n${supplement}\n\nPaciente: ${patient}\nIndicación: ${instruction}`)}
+                    >
+                      <FileText className="size-4 text-cyan-700" /> Ver detalle de dosis
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             ))}
           </CardContent>
         </Card>
         <Card className="rounded-3xl border-0 bg-emerald-950 text-white shadow-sm">
-          <CardContent className="p-6">
-            <Leaf className="size-8 text-emerald-300" />
-            <p className="mt-8 text-sm text-white/60">Pacientes con seguimiento</p>
-            <p className="mt-1 text-5xl font-black">{Math.min(3, patients.length)}</p>
-            <p className="mt-5 text-sm leading-6 text-white/65">Registra producto, cantidad, instrucciones, lote y vencimiento sin mezclarlo con los medicamentos declarados por el paciente.</p>
+          <CardContent className="p-7">
+            <Leaf className="size-10 text-emerald-300" />
+            <p className="mt-8 text-base font-bold text-white/80">Pacientes con seguimiento</p>
+            <p className="mt-2 text-6xl font-black text-emerald-300">{Math.min(3, patients.length)}</p>
+            <p className="mt-6 text-base leading-relaxed text-white/85">
+              Registra producto, cantidad, instrucciones, lote y vencimiento sin mezclarlo con los medicamentos declarados por el paciente.
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -1511,68 +1579,77 @@ function PatientRecordPage({ patient, onBack, onDeleted, onSaved }: { patient: P
         <span className="grid size-16 shrink-0 place-items-center rounded-2xl bg-cyan-300 text-xl font-black text-slate-950">{patient.name.split(' ').map((part) => part[0]).slice(0, 2).join('')}</span>
       </div>
       <div className="space-y-5 rounded-3xl bg-white p-5 shadow-sm sm:p-7">
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl bg-muted p-4"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Sesiones</p><p className="mt-2 text-2xl font-black">{patient.used} / {patient.total}</p></div>
-              <div className="rounded-2xl bg-cyan-50 p-4"><p className="text-xs font-semibold uppercase tracking-wider text-cyan-800">Teléfono</p><p className="mt-2 font-bold">{patient.phone || 'Sin registrar'}</p></div>
-              <div className="rounded-2xl bg-emerald-50 p-4"><p className="text-xs font-semibold uppercase tracking-wider text-emerald-800">Estado</p><p className="mt-2 font-bold">Plan activo</p></div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="rounded-2xl bg-muted/80 p-5 border">
+                <p className="text-sm font-bold uppercase tracking-wider text-slate-700">Sesiones</p>
+                <p className="mt-2 text-3xl font-black text-slate-950">{patient.used} / {patient.total}</p>
+              </div>
+              <div className="rounded-2xl bg-cyan-50 p-5 border border-cyan-100">
+                <p className="text-sm font-bold uppercase tracking-wider text-cyan-900">Teléfono</p>
+                <p className="mt-2 text-xl font-black text-cyan-950">{patient.phone || 'Sin registrar'}</p>
+              </div>
+              <div className="rounded-2xl bg-emerald-50 p-5 border border-emerald-100">
+                <p className="text-sm font-bold uppercase tracking-wider text-emerald-900">Estado</p>
+                <p className="mt-2 text-xl font-black text-emerald-950">Plan activo</p>
+              </div>
             </div>
             {record?.patientInfo && (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 rounded-2xl border bg-slate-50/50 p-4 text-sm">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 rounded-2xl border bg-slate-50/70 p-5">
                 <div>
-                  <span className="text-xs text-muted-foreground font-semibold uppercase">DNI</span>
-                  <p className="font-bold text-slate-800">{record.patientInfo.dni || 'No registrado'}</p>
+                  <span className="text-sm text-slate-700 font-extrabold uppercase block">DNI</span>
+                  <p className="text-base sm:text-lg font-black text-slate-900 mt-0.5">{record.patientInfo.dni || 'No registrado'}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground font-semibold uppercase">Dirección</span>
-                  <p className="font-bold text-slate-800">{record.patientInfo.address || 'No registrada'}</p>
+                  <span className="text-sm text-slate-700 font-extrabold uppercase block">Dirección</span>
+                  <p className="text-base font-bold text-slate-900 mt-0.5">{record.patientInfo.address || 'No registrada'}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground font-semibold uppercase">Profesión</span>
-                  <p className="font-bold text-slate-800">{record.patientInfo.occupation || 'No registrada'}</p>
+                  <span className="text-sm text-slate-700 font-extrabold uppercase block">Profesión</span>
+                  <p className="text-base font-bold text-slate-900 mt-0.5">{record.patientInfo.occupation || 'No registrada'}</p>
                 </div>
                 <div>
-                  <span className="text-xs text-muted-foreground font-semibold uppercase">F. Nacimiento</span>
-                  <p className="font-bold text-slate-800">{record.patientInfo.birthDate || 'No registrada'}</p>
+                  <span className="text-sm text-slate-700 font-extrabold uppercase block">F. Nacimiento</span>
+                  <p className="text-base font-bold text-slate-900 mt-0.5">{record.patientInfo.birthDate || 'No registrada'}</p>
                 </div>
               </div>
             )}
             {record?.anamnesis && (
-              <div className="space-y-4 rounded-3xl border border-cyan-200 bg-cyan-50/30 p-5">
-                <div className="flex items-center gap-3">
-                  <span className="grid size-10 place-items-center rounded-xl bg-cyan-700 text-white">
-                    <Activity className="size-5" />
+              <div className="space-y-5 rounded-3xl border border-cyan-200 bg-cyan-50/30 p-6">
+                <div className="flex items-center gap-3.5">
+                  <span className="grid size-12 place-items-center rounded-2xl bg-cyan-700 text-white shadow-sm">
+                    <Activity className="size-6" />
                   </span>
                   <div>
-                    <h3 className="font-extrabold text-slate-900">Ficha de Anamnesis y Evaluación Quiropráctica</h3>
-                    <p className="text-xs text-muted-foreground">Registrada el {record.anamnesis.evaluation_date || 'primer día'}</p>
+                    <h3 className="text-lg sm:text-xl font-black text-slate-900">Ficha de Anamnesis y Evaluación Quiropráctica</h3>
+                    <p className="text-sm text-slate-600 font-medium">Registrada el {record.anamnesis.evaluation_date || 'primer día'}</p>
                   </div>
                 </div>
 
-                <div className="rounded-2xl bg-white p-4 shadow-sm border">
-                  <p className="text-xs font-bold uppercase tracking-wider text-cyan-800 mb-3">1. Anamnesis y Estado de Salud</p>
-                  <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 text-sm">
+                <div className="rounded-2xl bg-white p-5 shadow-sm border space-y-3">
+                  <p className="text-sm font-black uppercase tracking-wider text-cyan-800">1. Anamnesis y Estado de Salud</p>
+                  <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                     <div>
-                      <span className="text-xs text-muted-foreground block">Queja Principal</span>
-                      <strong className="text-slate-900">{record.anamnesis.main_complaint || 'No indicada'}</strong>
+                      <span className="text-sm text-slate-700 font-bold block">Queja Principal</span>
+                      <strong className="text-base font-black text-slate-900 block mt-0.5">{record.anamnesis.main_complaint || 'No indicada'}</strong>
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground block">Duración del Dolor</span>
-                      <strong className="text-slate-900">{record.anamnesis.pain_duration_hours ? `${record.anamnesis.pain_duration_hours} hrs` : 'No indicada'}</strong>
+                      <span className="text-sm text-slate-700 font-bold block">Duración del Dolor</span>
+                      <strong className="text-base font-black text-slate-900 block mt-0.5">{record.anamnesis.pain_duration_hours ? `${record.anamnesis.pain_duration_hours} hrs` : 'No indicada'}</strong>
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground block">Escala de Dolor (1 a 10)</span>
-                      <Badge className={cn('mt-0.5 text-xs font-bold', (record.anamnesis.pain_level ?? 0) >= 7 ? 'bg-red-500' : (record.anamnesis.pain_level ?? 0) >= 4 ? 'bg-amber-500' : 'bg-emerald-600')}>
+                      <span className="text-sm text-slate-700 font-bold block">Escala de Dolor (1 a 10)</span>
+                      <Badge className={cn('mt-1 text-sm font-black px-3 py-1', (record.anamnesis.pain_level ?? 0) >= 7 ? 'bg-red-500' : (record.anamnesis.pain_level ?? 0) >= 4 ? 'bg-amber-500' : 'bg-emerald-600')}>
                         {record.anamnesis.pain_level ?? '-'}/10
                       </Badge>
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground block">Estado de Salud General</span>
-                      <strong className="text-slate-900">{record.anamnesis.general_health || 'No indicado'}</strong>
+                      <span className="text-sm text-slate-700 font-bold block">Estado de Salud General</span>
+                      <strong className="text-base font-black text-slate-900 block mt-0.5">{record.anamnesis.general_health || 'No indicado'}</strong>
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground block">Horas de Sueño</span>
-                      <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
-                        <strong className="text-slate-900">
+                      <span className="text-sm text-slate-700 font-bold block">Horas de Sueño</span>
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <strong className="text-base font-black text-slate-900">
                           {record.anamnesis.sleep_hours
                             ? record.anamnesis.sleep_hours.toLowerCase().includes('hora') || record.anamnesis.sleep_hours.toLowerCase().includes('hr')
                               ? record.anamnesis.sleep_hours
@@ -1584,27 +1661,27 @@ function PatientRecordPage({ patient, onBack, onDeleted, onSaved }: { patient: P
                           if (isNaN(parsed) || parsed <= 0) return null;
                           if (parsed < 6) {
                             return (
-                              <Badge className="bg-rose-500 hover:bg-rose-600 text-[10px] font-bold px-1.5 py-0">
+                              <Badge className="bg-rose-500 hover:bg-rose-600 text-xs font-black px-2 py-0.5">
                                 🚨 Déficit severo ({parsed}h)
                               </Badge>
                             );
                           }
                           if (parsed < 7) {
                             return (
-                              <Badge className="bg-amber-500 hover:bg-amber-600 text-[10px] font-bold px-1.5 py-0">
+                              <Badge className="bg-amber-500 hover:bg-amber-600 text-xs font-black px-2 py-0.5">
                                 ⚠️ Insuficiente ({parsed}h)
                               </Badge>
                             );
                           }
                           if (parsed <= 9) {
                             return (
-                              <Badge className="bg-emerald-600 hover:bg-emerald-700 text-[10px] font-bold px-1.5 py-0">
+                              <Badge className="bg-emerald-600 hover:bg-emerald-700 text-xs font-black px-2 py-0.5">
                                 ✓ Óptimo ({parsed}h)
                               </Badge>
                             );
                           }
                           return (
-                            <Badge className="bg-sky-600 hover:bg-sky-700 text-[10px] font-bold px-1.5 py-0">
+                            <Badge className="bg-sky-600 hover:bg-sky-700 text-xs font-black px-2 py-0.5">
                               Prolongado ({parsed}h)
                             </Badge>
                           );
@@ -1612,107 +1689,107 @@ function PatientRecordPage({ patient, onBack, onDeleted, onSaved }: { patient: P
                       </div>
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground block">Embarazo</span>
-                      <strong className="text-slate-900">{record.anamnesis.pregnancy_status || 'No'}</strong>
+                      <span className="text-sm text-slate-700 font-bold block">Embarazo</span>
+                      <strong className="text-base font-black text-slate-900 block mt-0.5">{record.anamnesis.pregnancy_status || 'No'}</strong>
                     </div>
                     <div className="sm:col-span-2 md:col-span-3">
-                      <span className="text-xs text-muted-foreground block">Medicamento que toma</span>
-                      <strong className="text-slate-900">{record.anamnesis.medications || 'Ninguno reportado'}</strong>
+                      <span className="text-sm text-slate-700 font-bold block">Medicamento que toma</span>
+                      <strong className="text-base font-bold text-slate-900 block mt-0.5">{record.anamnesis.medications || 'Ninguno reportado'}</strong>
                     </div>
                   </div>
                 </div>
 
-                <div className="rounded-2xl bg-white p-4 shadow-sm border">
-                  <p className="text-xs font-bold uppercase tracking-wider text-cyan-800 mb-3">Evaluación de la Columna Vertebral</p>
-                  <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 text-sm">
+                <div className="rounded-2xl bg-white p-5 shadow-sm border space-y-3">
+                  <p className="text-sm font-black uppercase tracking-wider text-cyan-800">Evaluación de la Columna Vertebral</p>
+                  <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                     <div>
-                      <span className="text-xs text-muted-foreground block">Inclinación</span>
+                      <span className="text-sm text-slate-700 font-bold block">Inclinación</span>
                       {renderSpinePainBadges(record.anamnesis.spine_inclination)}
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground block">Rotación</span>
+                      <span className="text-sm text-slate-700 font-bold block">Rotación</span>
                       {renderSpinePainBadges(record.anamnesis.spine_rotation)}
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground block">Extensión</span>
+                      <span className="text-sm text-slate-700 font-bold block">Extensión</span>
                       {renderSpinePainBadges(record.anamnesis.spine_extension)}
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground block">Ilíaco</span>
+                      <span className="text-sm text-slate-700 font-bold block">Ilíaco</span>
                       {renderSpinePainBadges(record.anamnesis.iliac)}
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground block">Marcha de Puntas</span>
-                      <strong className="text-slate-900">{record.anamnesis.gait_tiptoes || 'Normal'}</strong>
+                      <span className="text-sm text-slate-700 font-bold block">Marcha de Puntas</span>
+                      <strong className="text-base font-black text-slate-900 block mt-0.5">{record.anamnesis.gait_tiptoes || 'Normal'}</strong>
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground block">Marcha de Talones</span>
-                      <strong className="text-slate-900">{record.anamnesis.gait_heels || 'Normal'}</strong>
+                      <span className="text-sm text-slate-700 font-bold block">Marcha de Talones</span>
+                      <strong className="text-base font-black text-slate-900 block mt-0.5">{record.anamnesis.gait_heels || 'Normal'}</strong>
                     </div>
                   </div>
                 </div>
 
-                <div className="rounded-2xl bg-white p-4 shadow-sm border">
-                  <p className="text-xs font-bold uppercase tracking-wider text-cyan-800 mb-3">2. Evaluación Postural y Palpación</p>
-                  <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 text-sm">
+                <div className="rounded-2xl bg-white p-5 shadow-sm border space-y-3">
+                  <p className="text-sm font-black uppercase tracking-wider text-cyan-800">2. Evaluación Postural y Palpación</p>
+                  <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                     <div>
-                      <span className="text-xs text-muted-foreground block">Posición Prono</span>
-                      <strong className="text-slate-900">{record.anamnesis.prone_position || 'Normal'}</strong>
+                      <span className="text-sm text-slate-700 font-bold block">Posición Prono</span>
+                      <strong className="text-base font-bold text-slate-900 block mt-0.5">{record.anamnesis.prone_position || 'Normal'}</strong>
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground block">Largo de Piernas</span>
-                      <strong className="text-slate-900">{record.anamnesis.leg_length || 'Iguales'}</strong>
+                      <span className="text-sm text-slate-700 font-bold block">Largo de Piernas</span>
+                      <strong className="text-base font-bold text-slate-900 block mt-0.5">{record.anamnesis.leg_length || 'Iguales'}</strong>
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground block">Dolor Sacro Ilíaco</span>
-                      <strong className="text-slate-900">{record.anamnesis.sacroiliac_pain || 'No'}</strong>
+                      <span className="text-sm text-slate-700 font-bold block">Dolor Sacro Ilíaco</span>
+                      <strong className="text-base font-bold text-slate-900 block mt-0.5">{record.anamnesis.sacroiliac_pain || 'No'}</strong>
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground block">Síndrome Cervical</span>
-                      <strong className="text-slate-900">{record.anamnesis.cervical_syndrome || 'No'}</strong>
+                      <span className="text-sm text-slate-700 font-bold block">Síndrome Cervical</span>
+                      <strong className="text-base font-bold text-slate-900 block mt-0.5">{record.anamnesis.cervical_syndrome || 'No'}</strong>
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground block">Palpación Dinámica</span>
-                      <strong className="text-slate-900">{record.anamnesis.dynamic_palpation || 'Normal'}</strong>
+                      <span className="text-sm text-slate-700 font-bold block">Palpación Dinámica</span>
+                      <strong className="text-base font-bold text-slate-900 block mt-0.5">{record.anamnesis.dynamic_palpation || 'Normal'}</strong>
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground block">Pierna más resistente</span>
-                      <strong className="text-slate-900">{record.anamnesis.stronger_leg || 'Simétrica'}</strong>
+                      <span className="text-sm text-slate-700 font-bold block">Pierna más resistente</span>
+                      <strong className="text-base font-bold text-slate-900 block mt-0.5">{record.anamnesis.stronger_leg || 'Simétrica'}</strong>
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground block">Palpación Estática</span>
-                      <strong className="text-slate-900">{record.anamnesis.static_palpation || 'Normal'}</strong>
+                      <span className="text-sm text-slate-700 font-bold block">Palpación Estática</span>
+                      <strong className="text-base font-bold text-slate-900 block mt-0.5">{record.anamnesis.static_palpation || 'Normal'}</strong>
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground block">Tensión muscular / Sensibilidad</span>
-                      <strong className="text-slate-900">{record.anamnesis.muscle_tension || 'Sin hallazgos'}</strong>
+                      <span className="text-sm text-slate-700 font-bold block">Tensión muscular / Sensibilidad</span>
+                      <strong className="text-base font-bold text-slate-900 block mt-0.5">{record.anamnesis.muscle_tension || 'Sin hallazgos'}</strong>
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground block">Escaneo Lumbar</span>
-                      <strong className="text-slate-900">{record.anamnesis.lumbar_hypomobility || record.anamnesis.lumbar_scan || 'Sin hallazgos'}</strong>
+                      <span className="text-sm text-slate-700 font-bold block">Escaneo Lumbar</span>
+                      <strong className="text-base font-bold text-slate-900 block mt-0.5">{record.anamnesis.lumbar_hypomobility || record.anamnesis.lumbar_scan || 'Sin hallazgos'}</strong>
                     </div>
                     <div className="sm:col-span-2 md:col-span-3">
-                      <span className="text-xs text-muted-foreground block">Escaneo Torácico</span>
-                      <strong className="text-slate-900">{record.anamnesis.thoracic_scan || record.anamnesis.thoracic_hypomobility || 'Sin hallazgos'}</strong>
+                      <span className="text-sm text-slate-700 font-bold block">Escaneo Torácico</span>
+                      <strong className="text-base font-bold text-slate-900 block mt-0.5">{record.anamnesis.thoracic_scan || record.anamnesis.thoracic_hypomobility || 'Sin hallazgos'}</strong>
                     </div>
                   </div>
                 </div>
 
-                <div className="rounded-2xl bg-white p-4 shadow-sm border">
-                  <p className="text-xs font-bold uppercase tracking-wider text-cyan-800 mb-3">3. Evaluación Cervical y Hallazgos</p>
-                  <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 text-sm">
+                <div className="rounded-2xl bg-white p-5 shadow-sm border space-y-3">
+                  <p className="text-sm font-black uppercase tracking-wider text-cyan-800">3. Evaluación Cervical y Hallazgos</p>
+                  <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                     <div>
-                      <span className="text-xs text-muted-foreground block">Cervical (C2 / C7 Rotación)</span>
-                      <strong className="text-slate-900">{record.anamnesis.cervical_c2_c7_rotation || 'Normal'}</strong>
+                      <span className="text-sm text-slate-700 font-bold block">Cervical (C2 / C7 Rotación)</span>
+                      <strong className="text-base font-bold text-slate-900 block mt-0.5">{record.anamnesis.cervical_c2_c7_rotation || 'Normal'}</strong>
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground block">Nivel Listado (Serie 1 al 7)</span>
-                      <strong className="text-slate-900">{record.anamnesis.cervical_series || record.anamnesis.cervical_listing_level || 'Normal'}</strong>
+                      <span className="text-sm text-slate-700 font-bold block">Nivel Listado (Serie 1 al 7)</span>
+                      <strong className="text-base font-bold text-slate-900 block mt-0.5">{record.anamnesis.cervical_series || record.anamnesis.cervical_listing_level || 'Normal'}</strong>
                     </div>
                     {record.anamnesis.clinical_notes && (
                       <div className="sm:col-span-2 md:col-span-3">
-                        <span className="text-xs text-muted-foreground block">Notas Clínicas Adicionales</span>
-                        <p className="text-slate-800 font-medium">{record.anamnesis.clinical_notes}</p>
+                        <span className="text-sm text-slate-700 font-bold block">Notas Clínicas Adicionales</span>
+                        <p className="text-base text-slate-900 font-medium mt-0.5 leading-relaxed">{record.anamnesis.clinical_notes}</p>
                       </div>
                     )}
                   </div>

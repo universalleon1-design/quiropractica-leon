@@ -495,7 +495,7 @@ export function NewPatientPageView({
           >
             <span
               className={cn(
-                'grid size-8 shrink-0 place-items-center rounded-xl text-xs font-black',
+                'grid size-9 shrink-0 place-items-center rounded-xl text-sm font-black',
                 step === item.num
                   ? 'bg-cyan-700 text-white shadow-sm'
                   : 'bg-muted text-muted-foreground'
@@ -506,13 +506,13 @@ export function NewPatientPageView({
             <div className="min-w-0">
               <p
                 className={cn(
-                  'text-xs font-bold uppercase tracking-wider',
+                  'text-xs sm:text-sm font-extrabold uppercase tracking-wider',
                   step === item.num ? 'text-cyan-800' : 'text-muted-foreground'
                 )}
               >
                 {item.title}
               </p>
-              <p className="truncate text-xs sm:text-sm font-extrabold text-slate-900">
+              <p className="truncate text-sm sm:text-base font-black text-slate-900">
                 {item.subtitle}
               </p>
             </div>
@@ -1060,7 +1060,7 @@ export function NewPatientPageView({
                         type="button"
                         onClick={() => setPainLevel(val)}
                         className={cn(
-                          'h-11 rounded-xl font-black text-sm transition',
+                          'h-11 sm:h-12 rounded-xl font-black text-base sm:text-lg transition',
                           painLevel === val
                             ? val <= 3
                               ? 'bg-emerald-600 text-white shadow-md scale-105'
@@ -1074,7 +1074,7 @@ export function NewPatientPageView({
                       </button>
                     ))}
                   </div>
-                  <div className="flex justify-between text-xs text-muted-foreground pt-1 px-1">
+                  <div className="flex justify-between text-xs sm:text-sm font-bold text-slate-500 pt-1 px-1">
                     <span>1: Leve</span>
                     <span>5: Moderado</span>
                     <span>10: Insupportable</span>
@@ -1091,7 +1091,7 @@ export function NewPatientPageView({
                           type="button"
                           onClick={() => setGeneralHealth(opt)}
                           className={cn(
-                            'h-11 rounded-xl text-xs sm:text-sm font-bold border transition',
+                            'h-11 sm:h-12 rounded-xl text-xs sm:text-base font-extrabold border transition',
                             generalHealth === opt
                               ? 'bg-cyan-700 text-white border-cyan-700 shadow-sm'
                               : 'bg-white hover:bg-slate-50 text-slate-700'
@@ -1110,7 +1110,7 @@ export function NewPatientPageView({
                         type="button"
                         onClick={() => setIsPregnant('No')}
                         className={cn(
-                          'h-11 px-5 rounded-xl text-sm font-bold border transition',
+                          'h-11 sm:h-12 px-6 rounded-xl text-sm sm:text-base font-black border transition',
                           isPregnant === 'No'
                             ? 'bg-slate-900 text-white'
                             : 'bg-white hover:bg-slate-50 text-slate-700'
@@ -1122,7 +1122,7 @@ export function NewPatientPageView({
                         type="button"
                         onClick={() => setIsPregnant('Sí')}
                         className={cn(
-                          'h-11 px-5 rounded-xl text-sm font-bold border transition',
+                          'h-11 sm:h-12 px-6 rounded-xl text-sm sm:text-base font-black border transition',
                           isPregnant === 'Sí'
                             ? 'bg-cyan-700 text-white'
                             : 'bg-white hover:bg-slate-50 text-slate-700'
@@ -1164,35 +1164,35 @@ export function NewPatientPageView({
 
                 <div className="grid gap-6 sm:grid-cols-2">
                   {/* 1. INCLINACIÓN */}
-                  <div className="space-y-3 rounded-2xl bg-white p-4 border shadow-sm">
+                  <div className="space-y-3 rounded-2xl bg-white p-4 sm:p-5 border shadow-sm">
                     <div className="flex items-center justify-between">
-                      <Label className="font-bold text-xs uppercase tracking-wider text-slate-800">
+                      <Label className="font-black text-sm uppercase tracking-wider text-slate-900">
                         INCLINACIÓN
                       </Label>
-                      <span className="text-[11px] font-semibold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded-md border border-cyan-200">
+                      <span className="text-xs font-bold text-cyan-800 bg-cyan-50 px-2.5 py-1 rounded-lg border border-cyan-200">
                         Escala 1 al 5
                       </span>
                     </div>
 
                     {/* Izquierda */}
-                    <div className="rounded-xl bg-slate-50 p-2.5 border">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">I</span>
+                    <div className="rounded-xl bg-slate-50 p-3 border">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <span className="text-sm font-black text-slate-800 flex items-center gap-2">
+                          <span className="size-6 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-xs font-black">I</span>
                           Izquierda:
                         </span>
-                        <span className="text-xs font-black text-cyan-900">
+                        <span className="text-sm sm:text-base font-black text-cyan-900">
                           Dolor: {spineInclinationLeft} / 5
                         </span>
                       </div>
-                      <div className="grid grid-cols-5 gap-1.5">
+                      <div className="grid grid-cols-5 gap-2">
                         {['1', '2', '3', '4', '5'].map((lvl) => (
                           <button
                             key={lvl}
                             type="button"
                             onClick={() => setSpineInclinationLeft(lvl)}
                             className={cn(
-                              'h-9 rounded-lg text-xs font-black transition border',
+                              'h-11 sm:h-12 rounded-xl text-base sm:text-lg font-black transition border',
                               spineInclinationLeft === lvl
                                 ? 'bg-cyan-700 text-white border-cyan-800 shadow-sm ring-2 ring-cyan-400/30'
                                 : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
@@ -1205,24 +1205,24 @@ export function NewPatientPageView({
                     </div>
 
                     {/* Derecha */}
-                    <div className="rounded-xl bg-slate-50 p-2.5 border">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">D</span>
+                    <div className="rounded-xl bg-slate-50 p-3 border">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <span className="text-sm font-black text-slate-800 flex items-center gap-2">
+                          <span className="size-6 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-xs font-black">D</span>
                           Derecha:
                         </span>
-                        <span className="text-xs font-black text-cyan-900">
+                        <span className="text-sm sm:text-base font-black text-cyan-900">
                           Dolor: {spineInclinationRight} / 5
                         </span>
                       </div>
-                      <div className="grid grid-cols-5 gap-1.5">
+                      <div className="grid grid-cols-5 gap-2">
                         {['1', '2', '3', '4', '5'].map((lvl) => (
                           <button
                             key={lvl}
                             type="button"
                             onClick={() => setSpineInclinationRight(lvl)}
                             className={cn(
-                              'h-9 rounded-lg text-xs font-black transition border',
+                              'h-11 sm:h-12 rounded-xl text-base sm:text-lg font-black transition border',
                               spineInclinationRight === lvl
                                 ? 'bg-cyan-700 text-white border-cyan-800 shadow-sm ring-2 ring-cyan-400/30'
                                 : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
@@ -1236,35 +1236,35 @@ export function NewPatientPageView({
                   </div>
 
                   {/* 2. ROTACIÓN */}
-                  <div className="space-y-3 rounded-2xl bg-white p-4 border shadow-sm">
+                  <div className="space-y-3 rounded-2xl bg-white p-4 sm:p-5 border shadow-sm">
                     <div className="flex items-center justify-between">
-                      <Label className="font-bold text-xs uppercase tracking-wider text-slate-800">
+                      <Label className="font-black text-sm uppercase tracking-wider text-slate-900">
                         ROTACIÓN
                       </Label>
-                      <span className="text-[11px] font-semibold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded-md border border-cyan-200">
+                      <span className="text-xs font-bold text-cyan-800 bg-cyan-50 px-2.5 py-1 rounded-lg border border-cyan-200">
                         Escala 1 al 5
                       </span>
                     </div>
 
                     {/* Izquierda */}
-                    <div className="rounded-xl bg-slate-50 p-2.5 border">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">I</span>
+                    <div className="rounded-xl bg-slate-50 p-3 border">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <span className="text-sm font-black text-slate-800 flex items-center gap-2">
+                          <span className="size-6 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-xs font-black">I</span>
                           Izquierda:
                         </span>
-                        <span className="text-xs font-black text-cyan-900">
+                        <span className="text-sm sm:text-base font-black text-cyan-900">
                           Dolor: {spineRotationLeft} / 5
                         </span>
                       </div>
-                      <div className="grid grid-cols-5 gap-1.5">
+                      <div className="grid grid-cols-5 gap-2">
                         {['1', '2', '3', '4', '5'].map((lvl) => (
                           <button
                             key={lvl}
                             type="button"
                             onClick={() => setSpineRotationLeft(lvl)}
                             className={cn(
-                              'h-9 rounded-lg text-xs font-black transition border',
+                              'h-11 sm:h-12 rounded-xl text-base sm:text-lg font-black transition border',
                               spineRotationLeft === lvl
                                 ? 'bg-cyan-700 text-white border-cyan-800 shadow-sm ring-2 ring-cyan-400/30'
                                 : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
@@ -1277,24 +1277,24 @@ export function NewPatientPageView({
                     </div>
 
                     {/* Derecha */}
-                    <div className="rounded-xl bg-slate-50 p-2.5 border">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">D</span>
+                    <div className="rounded-xl bg-slate-50 p-3 border">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <span className="text-sm font-black text-slate-800 flex items-center gap-2">
+                          <span className="size-6 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-xs font-black">D</span>
                           Derecha:
                         </span>
-                        <span className="text-xs font-black text-cyan-900">
+                        <span className="text-sm sm:text-base font-black text-cyan-900">
                           Dolor: {spineRotationRight} / 5
                         </span>
                       </div>
-                      <div className="grid grid-cols-5 gap-1.5">
+                      <div className="grid grid-cols-5 gap-2">
                         {['1', '2', '3', '4', '5'].map((lvl) => (
                           <button
                             key={lvl}
                             type="button"
                             onClick={() => setSpineRotationRight(lvl)}
                             className={cn(
-                              'h-9 rounded-lg text-xs font-black transition border',
+                              'h-11 sm:h-12 rounded-xl text-base sm:text-lg font-black transition border',
                               spineRotationRight === lvl
                                 ? 'bg-cyan-700 text-white border-cyan-800 shadow-sm ring-2 ring-cyan-400/30'
                                 : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
@@ -1308,26 +1308,26 @@ export function NewPatientPageView({
                   </div>
 
                   {/* 3. EXTENSIÓN */}
-                  <div className="space-y-3 rounded-2xl bg-white p-4 border shadow-sm">
+                  <div className="space-y-3 rounded-2xl bg-white p-4 sm:p-5 border shadow-sm">
                     <div className="flex items-center justify-between">
-                      <Label className="font-bold text-xs uppercase tracking-wider text-slate-800">
+                      <Label className="font-black text-sm uppercase tracking-wider text-slate-900">
                         EXTENSIÓN
                       </Label>
-                      <span className="text-xs font-black text-cyan-900">
+                      <span className="text-sm sm:text-base font-black text-cyan-900">
                         Dolor: {spineExtension} / 5
                       </span>
                     </div>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs sm:text-sm text-slate-500 font-medium">
                       Nivel de dolor o molestia al realizar extensión posterior
                     </p>
-                    <div className="grid grid-cols-5 gap-1.5 pt-1">
+                    <div className="grid grid-cols-5 gap-2 pt-1">
                       {['1', '2', '3', '4', '5'].map((lvl) => (
                         <button
                           key={lvl}
                           type="button"
                           onClick={() => setSpineExtension(lvl)}
                           className={cn(
-                            'h-11 rounded-xl text-sm font-black transition border',
+                            'h-11 sm:h-12 rounded-xl text-base sm:text-lg font-black transition border',
                             spineExtension === lvl
                               ? 'bg-slate-900 text-white border-slate-900 shadow-sm ring-2 ring-slate-400/30'
                               : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
@@ -1337,42 +1337,42 @@ export function NewPatientPageView({
                         </button>
                       ))}
                     </div>
-                    <div className="flex justify-between text-[11px] text-slate-400 font-medium px-1">
+                    <div className="flex justify-between text-xs font-semibold text-slate-500 px-1">
                       <span>1: Sin dolor</span>
                       <span>5: Dolor severo</span>
                     </div>
                   </div>
 
                   {/* 4. ILÍACO */}
-                  <div className="space-y-3 rounded-2xl bg-white p-4 border shadow-sm">
+                  <div className="space-y-3 rounded-2xl bg-white p-4 sm:p-5 border shadow-sm">
                     <div className="flex items-center justify-between">
-                      <Label className="font-bold text-xs uppercase tracking-wider text-slate-800">
+                      <Label className="font-black text-sm uppercase tracking-wider text-slate-900">
                         ILÍACO
                       </Label>
-                      <span className="text-[11px] font-semibold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded-md border border-cyan-200">
+                      <span className="text-xs font-bold text-cyan-800 bg-cyan-50 px-2.5 py-1 rounded-lg border border-cyan-200">
                         Escala 1 al 5
                       </span>
                     </div>
 
                     {/* Izquierdo */}
-                    <div className="rounded-xl bg-slate-50 p-2.5 border">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">I</span>
+                    <div className="rounded-xl bg-slate-50 p-3 border">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <span className="text-sm font-black text-slate-800 flex items-center gap-2">
+                          <span className="size-6 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-xs font-black">I</span>
                           Izquierdo:
                         </span>
-                        <span className="text-xs font-black text-cyan-900">
+                        <span className="text-sm sm:text-base font-black text-cyan-900">
                           Dolor: {iliacLeft} / 5
                         </span>
                       </div>
-                      <div className="grid grid-cols-5 gap-1.5">
+                      <div className="grid grid-cols-5 gap-2">
                         {['1', '2', '3', '4', '5'].map((lvl) => (
                           <button
                             key={lvl}
                             type="button"
                             onClick={() => setIliacLeft(lvl)}
                             className={cn(
-                              'h-9 rounded-lg text-xs font-black transition border',
+                              'h-11 sm:h-12 rounded-xl text-base sm:text-lg font-black transition border',
                               iliacLeft === lvl
                                 ? 'bg-cyan-700 text-white border-cyan-800 shadow-sm ring-2 ring-cyan-400/30'
                                 : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
@@ -1385,24 +1385,24 @@ export function NewPatientPageView({
                     </div>
 
                     {/* Derecho */}
-                    <div className="rounded-xl bg-slate-50 p-2.5 border">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">D</span>
+                    <div className="rounded-xl bg-slate-50 p-3 border">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <span className="text-sm font-black text-slate-800 flex items-center gap-2">
+                          <span className="size-6 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-xs font-black">D</span>
                           Derecho:
                         </span>
-                        <span className="text-xs font-black text-cyan-900">
+                        <span className="text-sm sm:text-base font-black text-cyan-900">
                           Dolor: {iliacRight} / 5
                         </span>
                       </div>
-                      <div className="grid grid-cols-5 gap-1.5">
+                      <div className="grid grid-cols-5 gap-2">
                         {['1', '2', '3', '4', '5'].map((lvl) => (
                           <button
                             key={lvl}
                             type="button"
                             onClick={() => setIliacRight(lvl)}
                             className={cn(
-                              'h-9 rounded-lg text-xs font-black transition border',
+                              'h-11 sm:h-12 rounded-xl text-base sm:text-lg font-black transition border',
                               iliacRight === lvl
                                 ? 'bg-cyan-700 text-white border-cyan-800 shadow-sm ring-2 ring-cyan-400/30'
                                 : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
@@ -1415,8 +1415,8 @@ export function NewPatientPageView({
                     </div>
                   </div>
 
-                  <div className="space-y-2.5 rounded-xl bg-white p-4 border">
-                    <Label className="font-bold text-xs uppercase tracking-wider text-slate-700">
+                  <div className="space-y-2.5 rounded-xl bg-white p-4 sm:p-5 border">
+                    <Label className="font-black text-sm uppercase tracking-wider text-slate-900">
                       MARCHA CON PIE PUNTAS
                     </Label>
                     <div className="grid grid-cols-2 gap-2">
@@ -1426,8 +1426,8 @@ export function NewPatientPageView({
                           type="button"
                           onClick={() => setGaitTiptoes(opt)}
                           className={cn(
-                            'h-10 rounded-xl text-xs font-bold border transition',
-                            gaitTiptoes === opt ? 'bg-slate-900 text-white border-slate-900' : 'bg-white hover:bg-slate-50'
+                            'h-11 sm:h-12 rounded-xl text-sm sm:text-base font-black border transition',
+                            gaitTiptoes === opt ? 'bg-slate-900 text-white border-slate-900' : 'bg-white hover:bg-slate-50 text-slate-800'
                           )}
                         >
                           {opt}
@@ -1436,8 +1436,8 @@ export function NewPatientPageView({
                     </div>
                   </div>
 
-                  <div className="space-y-2.5 rounded-xl bg-white p-4 border">
-                    <Label className="font-bold text-xs uppercase tracking-wider text-slate-700">
+                  <div className="space-y-2.5 rounded-xl bg-white p-4 sm:p-5 border">
+                    <Label className="font-black text-sm uppercase tracking-wider text-slate-900">
                       MARCHA CON PIE TALONES
                     </Label>
                     <div className="grid grid-cols-2 gap-2">
@@ -1447,8 +1447,8 @@ export function NewPatientPageView({
                           type="button"
                           onClick={() => setGaitHeels(opt)}
                           className={cn(
-                            'h-10 rounded-xl text-xs font-bold border transition',
-                            gaitHeels === opt ? 'bg-slate-900 text-white border-slate-900' : 'bg-white hover:bg-slate-50'
+                            'h-11 sm:h-12 rounded-xl text-sm sm:text-base font-black border transition',
+                            gaitHeels === opt ? 'bg-slate-900 text-white border-slate-900' : 'bg-white hover:bg-slate-50 text-slate-800'
                           )}
                         >
                           {opt}
@@ -1527,10 +1527,10 @@ export function NewPatientPageView({
                           type="button"
                           onClick={() => setLegLengthSide(side)}
                           className={cn(
-                            'h-11 flex-1 rounded-xl text-xs sm:text-sm font-bold border transition',
+                            'h-11 sm:h-12 flex-1 rounded-xl text-sm sm:text-base font-black border transition',
                             legLengthSide === side
                               ? 'bg-cyan-700 text-white border-cyan-700 shadow-sm'
-                              : 'bg-white hover:bg-slate-50 text-slate-700'
+                              : 'bg-white hover:bg-slate-50 text-slate-800'
                           )}
                         >
                           {side}
@@ -1542,7 +1542,7 @@ export function NewPatientPageView({
                         placeholder="Diferencia aprox. (ej. Corta 1 cm, Corta 5 mm)"
                         value={legLengthDiff}
                         onChange={(e) => setLegLengthDiff(e.target.value)}
-                        className="h-10 rounded-xl mt-2"
+                        className="h-11 rounded-xl mt-2 font-medium"
                       />
                     )}
                   </div>
@@ -1557,12 +1557,12 @@ export function NewPatientPageView({
                             type="button"
                             onClick={() => setSacroiliacPain(opt)}
                             className={cn(
-                              'h-11 flex-1 rounded-xl text-sm font-black border transition',
+                              'h-11 sm:h-12 flex-1 rounded-xl text-base font-black border transition',
                               sacroiliacPain === opt
                                 ? opt === 'SI'
-                                  ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
-                                  : 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                                : 'bg-white hover:bg-slate-50 text-slate-700'
+                                ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
+                                : 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                                : 'bg-white hover:bg-slate-50 text-slate-800'
                             )}
                           >
                             {opt}
@@ -1577,8 +1577,8 @@ export function NewPatientPageView({
                               type="button"
                               onClick={() => setSacroiliacSide(side)}
                               className={cn(
-                                'h-11 flex-1 rounded-xl text-xs font-bold border transition',
-                                sacroiliacSide === side ? 'bg-cyan-700 text-white' : 'bg-white'
+                                'h-11 flex-1 rounded-xl text-xs sm:text-sm font-bold border transition',
+                                sacroiliacSide === side ? 'bg-cyan-700 text-white font-black' : 'bg-white'
                               )}
                             >
                               {side}
@@ -1642,8 +1642,8 @@ export function NewPatientPageView({
                           type="button"
                           onClick={() => setStrongerLeg(item.id as 'D' | 'I' | 'Neutro')}
                           className={cn(
-                            'h-11 rounded-xl text-xs sm:text-sm font-bold border transition',
-                            strongerLeg === item.id ? 'bg-cyan-700 text-white border-cyan-700 shadow-sm' : 'bg-white hover:bg-slate-50'
+                            'h-11 sm:h-12 rounded-xl text-sm sm:text-base font-black border transition',
+                            strongerLeg === item.id ? 'bg-cyan-700 text-white border-cyan-700 shadow-sm' : 'bg-white hover:bg-slate-50 text-slate-800'
                           )}
                         >
                           {item.label}
@@ -1691,8 +1691,8 @@ export function NewPatientPageView({
                             type="button"
                             onClick={() => setLumbarYesNo(opt as 'SI' | 'NO')}
                             className={cn(
-                              'h-10 flex-1 rounded-xl text-xs font-black border transition',
-                              lumbarYesNo === opt ? 'bg-slate-900 text-white border-slate-900' : 'bg-white'
+                              'h-11 flex-1 rounded-xl text-sm font-black border transition',
+                              lumbarYesNo === opt ? 'bg-slate-900 text-white border-slate-900' : 'bg-white hover:bg-slate-50 text-slate-800'
                             )}
                           >
                             {opt}
@@ -1876,10 +1876,10 @@ export function NewPatientPageView({
                           type="button"
                           onClick={() => setTotalSessions(num)}
                           className={cn(
-                            'h-10 flex-1 rounded-xl text-xs font-black border transition',
+                            'h-11 sm:h-12 flex-1 rounded-xl text-sm sm:text-base font-black border transition',
                             totalSessions === num
                               ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                              : 'bg-white hover:bg-slate-100 text-slate-700'
+                              : 'bg-white hover:bg-slate-100 text-slate-800'
                           )}
                         >
                           {num}
@@ -1894,7 +1894,7 @@ export function NewPatientPageView({
                       placeholder="Otro número"
                       value={totalSessions}
                       onChange={(e) => setTotalSessions(e.target.value)}
-                      className="h-10 rounded-xl bg-white"
+                      className="h-11 rounded-xl bg-white font-medium"
                     />
                   </div>
 
@@ -1909,10 +1909,10 @@ export function NewPatientPageView({
                           type="button"
                           onClick={() => setSessionsPerWeek(freq)}
                           className={cn(
-                            'h-10 flex-1 rounded-xl text-xs font-black border transition',
+                            'h-11 sm:h-12 flex-1 rounded-xl text-xs sm:text-sm font-black border transition',
                             sessionsPerWeek === freq
                               ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                              : 'bg-white hover:bg-slate-100 text-slate-700'
+                              : 'bg-white hover:bg-slate-100 text-slate-800'
                           )}
                         >
                           {freq}x sem
@@ -1927,7 +1927,7 @@ export function NewPatientPageView({
                       placeholder="Otra frec."
                       value={sessionsPerWeek}
                       onChange={(e) => setSessionsPerWeek(e.target.value)}
-                      className="h-10 rounded-xl bg-white"
+                      className="h-11 rounded-xl bg-white font-medium"
                     />
                   </div>
 
@@ -1940,7 +1940,7 @@ export function NewPatientPageView({
                       type="date"
                       value={appointmentDate}
                       onChange={(e) => setAppointmentDate(e.target.value)}
-                      className="h-10 rounded-xl bg-white"
+                      className="h-11 rounded-xl bg-white font-medium"
                     />
                   </div>
 
@@ -1953,7 +1953,7 @@ export function NewPatientPageView({
                       type="time"
                       value={appointmentTime}
                       onChange={(e) => setAppointmentTime(e.target.value)}
-                      className="h-10 rounded-xl bg-white"
+                      className="h-11 rounded-xl bg-white font-medium"
                     />
                   </div>
                 </div>
@@ -1987,7 +1987,7 @@ export function NewPatientPageView({
                           <CreditCard className="size-4 text-emerald-700" />
                           ABONO O PAGO INICIAL (S/)
                         </Label>
-                        <span className="text-[11px] text-muted-foreground">Opcional</span>
+                        <span className="text-[11px] text-muted-foreground font-semibold">Opcional</span>
                       </div>
                       <div className="relative">
                         <span className="absolute left-3 top-2.5 font-bold text-slate-500 text-sm">S/</span>
@@ -2025,13 +2025,13 @@ export function NewPatientPageView({
 
                   {/* Atajos de pago rápido */}
                   <div className="flex flex-wrap items-center gap-2 pt-1">
-                    <span className="text-xs font-semibold text-slate-500">Atajos de pago:</span>
+                    <span className="text-xs sm:text-sm font-bold text-slate-600">Atajos de pago:</span>
                     <button
                       type="button"
                       onClick={() => setInitialPayment('0')}
                       className={cn(
-                        'text-xs px-2.5 py-1 rounded-lg border font-bold transition',
-                        initialPaymentNum === 0 ? 'bg-slate-900 text-white' : 'bg-slate-50 hover:bg-slate-100 text-slate-700'
+                        'text-xs sm:text-sm px-3 py-1.5 rounded-xl border font-bold transition',
+                        initialPaymentNum === 0 ? 'bg-slate-900 text-white' : 'bg-slate-50 hover:bg-slate-100 text-slate-800'
                       )}
                     >
                       Sin abono hoy (S/ 0)
@@ -2042,10 +2042,10 @@ export function NewPatientPageView({
                           type="button"
                           onClick={() => setInitialPayment((totalAmountNum * 0.5).toFixed(2))}
                           className={cn(
-                            'text-xs px-2.5 py-1 rounded-lg border font-bold transition',
+                            'text-xs sm:text-sm px-3 py-1.5 rounded-xl border font-bold transition',
                             initialPaymentNum === Number((totalAmountNum * 0.5).toFixed(2))
                               ? 'bg-cyan-700 text-white'
-                              : 'bg-slate-50 hover:bg-slate-100 text-slate-700'
+                              : 'bg-slate-50 hover:bg-slate-100 text-slate-800'
                           )}
                         >
                           50% de inicial (S/ {(totalAmountNum * 0.5).toFixed(2)})
@@ -2054,10 +2054,10 @@ export function NewPatientPageView({
                           type="button"
                           onClick={() => setInitialPayment(totalAmountNum.toFixed(2))}
                           className={cn(
-                            'text-xs px-2.5 py-1 rounded-lg border font-bold transition',
+                            'text-xs sm:text-sm px-3 py-1.5 rounded-xl border font-bold transition',
                             initialPaymentNum === totalAmountNum
                               ? 'bg-emerald-700 text-white'
-                              : 'bg-slate-50 hover:bg-slate-100 text-slate-700'
+                              : 'bg-slate-50 hover:bg-slate-100 text-slate-800'
                           )}
                         >
                           Pago completo 100% (S/ {totalAmountNum.toFixed(2)})
