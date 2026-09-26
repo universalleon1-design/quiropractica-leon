@@ -9,6 +9,7 @@ import {
   Banknote,
   Check,
   CreditCard,
+  FileText,
   HeartPulse,
   Info,
   LoaderCircle,
@@ -18,6 +19,7 @@ import {
   Sparkles,
   User,
   UserPlus,
+  Users,
   WalletCards,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
