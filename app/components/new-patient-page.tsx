@@ -464,97 +464,50 @@ export function NewPatientPageView({
   }
 
   return (
-    <div ref={formTopRef} className="space-y-6 scroll-mt-20">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-3xl font-black tracking-tight text-slate-950">
-            Registrar Paciente
-          </h2>
-          <p className="text-muted-foreground">
-            Ficha de anamnesis quiropráctica, evaluación postural, plan de pagos y tarjeta QR.
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-2 sm:gap-4">
-        {[
-          { num: 1, title: 'Página 1', subtitle: 'Anamnesis y Columna' },
-          { num: 2, title: 'Página 2', subtitle: 'Postura y Palpación' },
-          { num: 3, title: 'Página 3', subtitle: 'Cervical, Plan y Pago' },
-        ].map((item) => (
-          <button
-            key={item.num}
-            type="button"
-            onClick={() => changeStep(item.num as 1 | 2 | 3)}
-            className={cn(
-              'flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 rounded-2xl p-3 sm:p-4 text-left transition border',
-              step === item.num
-                ? 'border-cyan-600 bg-cyan-50/70 shadow-sm ring-1 ring-cyan-600'
-                : 'border-border bg-white hover:bg-slate-50'
-            )}
-          >
-            <span
-              className={cn(
-                'grid size-9 shrink-0 place-items-center rounded-xl text-sm font-black',
-                step === item.num
-                  ? 'bg-cyan-700 text-white shadow-sm'
-                  : 'bg-muted text-muted-foreground'
-              )}
-            >
-              {item.num}
-            </span>
-            <div className="min-w-0">
-              <p
-                className={cn(
-                  'text-xs sm:text-sm font-extrabold uppercase tracking-wider',
-                  step === item.num ? 'text-cyan-800' : 'text-muted-foreground'
-                )}
-              >
-                {item.title}
-              </p>
-              <p className="truncate text-sm sm:text-base font-black text-slate-900">
-                {item.subtitle}
-              </p>
-            </div>
-          </button>
-        ))}
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6">        {/* ==================== PÁGINA 1 ==================== */}
+    <div ref={formTopRef} className="space-y-4 scroll-mt-20">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* ==================== PÁGINA 1 ==================== */}
         {step === 1 && (
-          <Card className="rounded-3xl border-0 shadow-sm bg-white">
-            <CardHeader className="pb-4 border-b">
-              <div className="flex items-center gap-3">
-                <span className="grid size-11 place-items-center rounded-2xl bg-cyan-100 text-cyan-900">
-                  <User className="size-5" />
-                </span>
-                <div>
-                  <CardTitle className="text-xl font-extrabold text-slate-950">
-                    Página 1: Ficha de Anamnesis y Evaluación
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Datos personales, motivo de consulta y evaluación preliminar de columna.
-                  </p>
+          <Card className="rounded-2xl border-0 shadow-sm bg-white overflow-hidden">
+            <CardHeader className="py-3 px-4 sm:px-6 border-b bg-slate-50/50">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="grid size-7 place-items-center rounded-lg bg-cyan-700 text-white text-xs font-black shadow-xs">
+                    1 / 3
+                  </span>
+                  <div>
+                    <CardTitle className="text-base sm:text-lg font-black text-slate-900 leading-tight">
+                      Página 1: Ficha de Anamnesis y Evaluación
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground hidden sm:block">
+                      Datos personales, motivo de consulta y evaluación preliminar de columna.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0" title="Paso 1 de 3">
+                  <span className="h-1.5 w-6 rounded-full bg-cyan-700" />
+                  <span className="h-1.5 w-2 rounded-full bg-slate-200" />
+                  <span className="h-1.5 w-2 rounded-full bg-slate-200" />
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-6 sm:p-8 space-y-7">
+            <CardContent className="p-4 sm:p-5 space-y-4">
               <div>
-                <h3 className="text-sm font-extrabold uppercase tracking-wider text-cyan-800 mb-4">
+                <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-cyan-900 mb-2.5">
                   Datos Generales del Paciente
                 </h3>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="space-y-2">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="space-y-1.5">
                     <Label htmlFor="evalDate">FECHA</Label>
                     <Input
                       id="evalDate"
                       type="date"
                       value={evaluationDate}
                       onChange={(e) => setEvaluationDate(e.target.value)}
-                      className="h-11 rounded-xl"
+                      className="h-10 rounded-xl"
                     />
                   </div>
-                  <div className="space-y-2 sm:col-span-2">
+                  <div className="space-y-1.5 sm:col-span-2">
                     <Label htmlFor="firstName">NOMBRES *</Label>
                     <Input
                       id="firstName"
@@ -562,10 +515,10 @@ export function NewPatientPageView({
                       placeholder="Ej. Juan Alberto"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
-                      className="h-11 rounded-xl"
+                      className="h-10 rounded-xl"
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="lastName">APELLIDOS *</Label>
                     <Input
                       id="lastName"
@@ -573,30 +526,30 @@ export function NewPatientPageView({
                       placeholder="Ej. Pérez Quispe"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
-                      className="h-11 rounded-xl"
+                      className="h-10 rounded-xl"
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="dni">DNI / DOCUMENTO</Label>
                     <Input
                       id="dni"
                       placeholder="8 dígitos"
                       value={dni}
                       onChange={(e) => setDni(e.target.value)}
-                      className="h-11 rounded-xl"
+                      className="h-10 rounded-xl"
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="birthDate">F/NACIMIENTO</Label>
                     <Input
                       id="birthDate"
                       type="date"
                       value={birthDate}
                       onChange={(e) => handleBirthDate(e.target.value)}
-                      className="h-11 rounded-xl"
+                      className="h-10 rounded-xl"
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="age">EDAD</Label>
                     <Input
                       id="age"
@@ -604,13 +557,13 @@ export function NewPatientPageView({
                       placeholder="Años"
                       value={age}
                       onChange={(e) => setAge(e.target.value)}
-                      className="h-11 rounded-xl"
+                      className="h-10 rounded-xl"
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="sex">SEXO</Label>
                     <Select value={sex} onValueChange={setSex}>
-                      <SelectTrigger id="sex" className="h-11 rounded-xl">
+                      <SelectTrigger id="sex" className="h-10 rounded-xl">
                         <SelectValue placeholder="Seleccionar" />
                       </SelectTrigger>
                       <SelectContent>
@@ -619,7 +572,7 @@ export function NewPatientPageView({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="phone">TELÉFONO (WhatsApp)</Label>
                     <Input
                       id="phone"
@@ -627,37 +580,37 @@ export function NewPatientPageView({
                       placeholder="Ej. 987654321"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="h-11 rounded-xl"
+                      className="h-10 rounded-xl"
                     />
                   </div>
-                  <div className="space-y-2 sm:col-span-2">
+                  <div className="space-y-1.5 sm:col-span-2">
                     <Label htmlFor="address">DIRECCIÓN</Label>
                     <Input
                       id="address"
                       placeholder="Av. / Calle / Distrito"
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
-                      className="h-11 rounded-xl"
+                      className="h-10 rounded-xl"
                     />
                   </div>
-                  <div className="space-y-2 sm:col-span-1">
+                  <div className="space-y-1.5 sm:col-span-1">
                     <Label htmlFor="occupation">PROFESIÓN / OCUPACIÓN</Label>
                     <Input
                       id="occupation"
                       placeholder="Ej. Contador, Chofer, etc."
                       value={occupation}
                       onChange={(e) => setOccupation(e.target.value)}
-                      className="h-11 rounded-xl"
+                      className="h-10 rounded-xl"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 space-y-4">
+              <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5 space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     <Scale className="size-4 text-cyan-800" />
-                    <h4 className="font-extrabold text-sm text-slate-800">
+                    <h4 className="font-extrabold text-xs sm:text-sm text-slate-800">
                       PESO Y TALLA (BIOMETRÍA)
                     </h4>
                   </div>
@@ -671,8 +624,8 @@ export function NewPatientPageView({
                   </button>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="space-y-2">
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="space-y-1.5">
                     <Label htmlFor="weightKg" className="text-xs font-bold text-slate-700">
                       PESO (kg)
                     </Label>
@@ -683,10 +636,10 @@ export function NewPatientPageView({
                       placeholder="Ej. 60"
                       value={weightKg}
                       onChange={(e) => setWeightKg(e.target.value)}
-                      className="h-11 rounded-xl bg-white"
+                      className="h-10 rounded-xl bg-white"
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="heightCm" className="text-xs font-bold text-slate-700">
                       TALLA (cm)
                     </Label>
@@ -697,21 +650,21 @@ export function NewPatientPageView({
                       placeholder="Ej. 160"
                       value={heightCm}
                       onChange={(e) => setHeightCm(e.target.value)}
-                      className="h-11 rounded-xl bg-white"
+                      className="h-10 rounded-xl bg-white"
                     />
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label className="text-xs font-bold text-slate-700">
                       IMC CALCULADO
                     </Label>
-                    <div className="flex h-11 items-center justify-between rounded-xl border bg-white px-4">
-                      <span className="font-black text-slate-900 text-base">
+                    <div className="flex h-10 items-center justify-between rounded-xl border bg-white px-3.5">
+                      <span className="font-black text-slate-900 text-sm sm:text-base">
                         {liveBmi ? liveBmi.toFixed(1) : '—'}
                       </span>
                       {bmiCategory && (
                         <span
                           className={cn(
-                            'rounded-lg border px-2.5 py-0.5 text-xs font-extrabold',
+                            'rounded-md border px-2 py-0.5 text-xs font-extrabold',
                             bmiCategory.color
                           )}
                         >
@@ -724,58 +677,58 @@ export function NewPatientPageView({
 
                 {/* Rango de peso tolerable según estatura y edad */}
                 {height > 0 && healthyMinKg && healthyMaxKg && (
-                  <div className="rounded-xl border border-cyan-200 bg-white p-4 space-y-3">
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 items-center">
+                  <div className="rounded-xl border border-cyan-200 bg-white p-3 space-y-2">
+                    <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 items-center">
                       <div>
-                        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground block">
                           Rango de peso tolerable para su talla
                         </span>
-                        <p className="mt-1 text-lg font-black text-cyan-950">
+                        <p className="mt-0.5 text-base font-black text-cyan-950">
                           {healthyMinKg} kg – {healthyMaxKg} kg
                         </p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                        <p className="text-[11px] text-muted-foreground">
                           {isSenior
-                            ? `Adulto mayor (${patientAgeNum} años: IMC 23.0 - 28.0 para protección ósea)`
+                            ? `Adulto mayor (${patientAgeNum} años: IMC 23.0 - 28.0)`
                             : isYouth
                             ? `Juvenil (${patientAgeNum} años)`
-                            : `Para ${heightCm} cm de estatura (IMC normal OMS 18.5 - 24.9)`}
+                            : `Para ${heightCm} cm de estatura (IMC OMS 18.5 - 24.9)`}
                         </p>
                       </div>
 
                       {weight > 0 && (
                         <div>
-                          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block">
+                          <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground block">
                             Estado actual vs rango
                           </span>
-                          <p className="mt-1 font-bold text-sm">
+                          <p className="mt-0.5 font-bold text-xs sm:text-sm">
                             {weight >= healthyMinKg && weight <= healthyMaxKg ? (
                               <span className="text-emerald-700 flex items-center gap-1.5 font-extrabold">
-                                <Check className="size-4" /> Peso óptimo / saludable
+                                <Check className="size-3.5" /> Peso óptimo / saludable
                               </span>
                             ) : weight > healthyMaxKg ? (
                               <span className="text-amber-700 font-extrabold">
-                                +{weightDiff} kg por encima del peso ideal
+                                +{weightDiff} kg sobre peso ideal
                               </span>
                             ) : (
                               <span className="text-amber-700 font-extrabold">
-                                {weightDiff} kg por debajo del mínimo saludable
+                                {weightDiff} kg bajo mínimo
                               </span>
                             )}
                           </p>
-                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                          <p className="text-[11px] text-muted-foreground">
                             Peso ingresado: {weight} kg
                           </p>
                         </div>
                       )}
 
-                      <div className="rounded-xl bg-cyan-50/70 p-3 border border-cyan-100 text-xs text-slate-700 sm:col-span-2 lg:col-span-1">
-                        <strong className="text-cyan-900 block mb-0.5">Evaluación Quiropráctica:</strong>
+                      <div className="rounded-lg bg-cyan-50/70 p-2.5 border border-cyan-100 text-xs text-slate-700 sm:col-span-2 lg:col-span-1 leading-snug">
+                        <strong className="text-cyan-900 block mb-0.5 text-[11px]">Evaluación Quiropráctica:</strong>
                         {weight > healthyMaxKg ? (
-                          <span>El sobrepeso genera sobrecarga mecánica en discos lumbares (L4-L5-S1) y pelvis.</span>
+                          <span>Sobrecarga mecánica en discos lumbares y pelvis.</span>
                         ) : weight < healthyMinKg && weight > 0 ? (
-                          <span>El bajo peso puede asociarse a debilidad muscular para el sostén de la columna.</span>
+                          <span>Posible debilidad muscular en sostén vertebral.</span>
                         ) : (
-                          <span>Carga articular equilibrada, óptima para la alineación vertebral y el tratamiento.</span>
+                          <span>Carga equilibrada, óptima para ajuste vertebral.</span>
                         )}
                       </div>
                     </div>
@@ -784,62 +737,52 @@ export function NewPatientPageView({
 
                 {/* Explicación médica detallada colapsable */}
                 {showBmiHelp && (
-                  <div className="rounded-xl border border-slate-200 bg-slate-100/70 p-4 text-xs space-y-2 text-slate-700 leading-relaxed">
-                    <p className="font-extrabold text-slate-900 text-sm">
+                  <div className="rounded-xl border border-slate-200 bg-slate-100/70 p-3 text-xs space-y-1.5 text-slate-700 leading-relaxed">
+                    <p className="font-extrabold text-slate-900 text-xs sm:text-sm">
                       ¿Qué es el IMC y qué significan esas numeraciones?
                     </p>
                     <p>
-                      El <strong>IMC (Índice de Masa Corporal)</strong> es el indicador internacional oficial de la <strong>OMS (Organización Mundial de la Salud)</strong> que relaciona el peso y la estatura de una persona mediante la fórmula: <code className="bg-white px-1.5 py-0.5 rounded font-bold">Peso ÷ (Estatura en metros)²</code>.
+                      El <strong>IMC (Índice de Masa Corporal)</strong> relaciona peso y estatura: <code className="bg-white px-1 py-0.5 rounded font-bold">Peso ÷ (Estatura en m)²</code>.
                     </p>
-                    <p>
-                      <strong>Ejemplo con tu imagen (Peso 60 kg y Talla 160 cm = 1.60 m):</strong>
-                      <br />
-                      • Se multiplica la talla por sí misma: 1.60 × 1.60 = <strong>2.56</strong>
-                      <br />
-                      • Se divide el peso entre ese número: 60 ÷ 2.56 = <strong className="text-cyan-800">23.4</strong>
-                    </p>
-                    <div className="grid gap-2 sm:grid-cols-2 pt-1 font-medium">
-                      <div className="bg-white p-2.5 rounded-lg border">
-                        <strong className="text-slate-900 block mb-1">Escala OMS (Adultos 18 a 64 años):</strong>
-                        • <strong>Menos de 18.5:</strong> Bajo peso<br />
-                        • <strong>18.5 a 24.9:</strong> Peso saludable (Normal)<br />
-                        • <strong>25.0 a 29.9:</strong> Sobrepeso<br />
-                        • <strong>30.0 a más:</strong> Obesidad
+                    <div className="grid gap-2 sm:grid-cols-2 pt-1 font-medium text-[11px]">
+                      <div className="bg-white p-2 rounded-lg border">
+                        <strong className="text-slate-900 block mb-0.5">Escala OMS (18 a 64 años):</strong>
+                        • &lt; 18.5: Bajo peso | • 18.5 - 24.9: Normal | • 25.0 - 29.9: Sobrepeso | • 30+: Obesidad
                       </div>
-                      <div className="bg-white p-2.5 rounded-lg border">
-                        <strong className="text-slate-900 block mb-1">Adultos mayores (65+ años):</strong>
-                        En geriatría se tolera un IMC de <strong>23.0 a 28.0</strong> para proteger la densidad ósea y prevenir la pérdida de masa muscular (sarcopenia).
+                      <div className="bg-white p-2 rounded-lg border">
+                        <strong className="text-slate-900 block mb-0.5">Adultos mayores (65+ años):</strong>
+                        IMC tolerable <strong>23.0 a 28.0</strong> para densidad ósea y prevenir sarcopenia.
                       </div>
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="space-y-4">
-                <h3 className="text-sm font-extrabold uppercase tracking-wider text-cyan-800">
+              <div className="space-y-3">
+                <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-cyan-900">
                   Queja Principal y Estado de Salud
                 </h3>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="mainComplaint">QUEJA PRINCIPAL (Motivo de consulta)</Label>
                   <Textarea
                     id="mainComplaint"
                     placeholder="Describe los dolores, zonas afectadas, inicio y molestias que siente el paciente..."
                     value={mainComplaint}
                     onChange={(e) => setMainComplaint(e.target.value)}
-                    className="min-h-20 rounded-xl"
+                    className="min-h-16 rounded-xl"
                   />
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="painDuration">CUÁNTAS HORAS DURA EL DOLOR</Label>
                     <Input
                       id="painDuration"
                       placeholder="Ej. Constante todo el día, 4 horas por la tarde..."
                       value={painDurationHours}
                       onChange={(e) => setPainDurationHours(e.target.value)}
-                      className="h-11 rounded-xl"
+                      className="h-10 rounded-xl"
                     />
                   </div>
 
@@ -863,7 +806,7 @@ export function NewPatientPageView({
                       placeholder="Ej. 5 horas, 7 horas..."
                       value={sleepHours}
                       onChange={(e) => setSleepHours(e.target.value)}
-                      className="h-11 rounded-xl"
+                      className="h-10 rounded-xl"
                     />
                   </div>
                 </div>
@@ -872,53 +815,53 @@ export function NewPatientPageView({
                 {hasSleepNumber && (
                   <div
                     className={cn(
-                      'rounded-2xl p-4 border transition-all text-xs space-y-2.5',
+                      'rounded-xl p-3 border transition-all text-xs space-y-2',
                       parsedSleepHours < 6
-                        ? 'bg-rose-50/90 border-rose-300 text-rose-950 shadow-sm'
+                        ? 'bg-rose-50/90 border-rose-300 text-rose-950 shadow-xs'
                         : parsedSleepHours < recommendedSleepMin
-                        ? 'bg-amber-50/90 border-amber-300 text-amber-950 shadow-sm'
+                        ? 'bg-amber-50/90 border-amber-300 text-amber-950 shadow-xs'
                         : parsedSleepHours <= recommendedSleepMax
-                        ? 'bg-emerald-50/90 border-emerald-300 text-emerald-950 shadow-sm'
-                        : 'bg-sky-50/90 border-sky-300 text-sky-950 shadow-sm'
+                        ? 'bg-emerald-50/90 border-emerald-300 text-emerald-950 shadow-xs'
+                        : 'bg-sky-50/90 border-sky-300 text-sky-950 shadow-xs'
                     )}
                   >
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-black/10 pb-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-black/10 pb-1.5">
                       <div className="flex items-center gap-2">
                         {parsedSleepHours < 6 ? (
-                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-rose-600 text-white font-bold text-xs shadow-sm">
+                          <span className="flex size-6 items-center justify-center rounded-full bg-rose-600 text-white font-bold text-xs shadow-xs">
                             🚨
                           </span>
                         ) : parsedSleepHours < recommendedSleepMin ? (
-                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-500 text-white font-bold text-xs shadow-sm">
+                          <span className="flex size-6 items-center justify-center rounded-full bg-amber-500 text-white font-bold text-xs shadow-xs">
                             ⚠️
                           </span>
                         ) : (
-                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-xs shadow-sm">
+                          <span className="flex size-6 items-center justify-center rounded-full bg-emerald-600 text-white font-bold text-xs shadow-xs">
                             ✓
                           </span>
                         )}
                         <div>
-                          <p className="font-extrabold text-sm">
+                          <p className="font-extrabold text-xs sm:text-sm">
                             {parsedSleepHours < 6
-                              ? `Alerta Clínica: Sueño Críticamente Insuficiente (${parsedSleepHours} horas/noche)`
+                              ? `Alerta: Sueño Insuficiente (${parsedSleepHours} horas/noche)`
                               : parsedSleepHours < recommendedSleepMin
-                              ? `Aviso Clínico: Horas de Sueño por Debajo de lo Recomendado (${parsedSleepHours} hrs)`
+                              ? `Aviso: Por Debajo de lo Recomendado (${parsedSleepHours} hrs)`
                               : parsedSleepHours <= recommendedSleepMax
-                              ? `Horas de Sueño en Rango Óptimo y Terapéutico (${parsedSleepHours} hrs)`
+                              ? `Horas de Sueño Óptimas (${parsedSleepHours} hrs)`
                               : `Aviso: Horas de Sueño Prolongadas (${parsedSleepHours} hrs)`}
                           </p>
                           <p className="text-[11px] opacity-80">
                             {isSenior
-                              ? 'Criterio para adultos mayores (65+ años): 7 a 8 horas recomendadas'
+                              ? 'Adultos mayores (65+): 7 a 8 h recomendadas'
                               : isYouth
-                              ? 'Criterio para jóvenes/menores (< 18 años): 8 a 10 horas recomendadas'
-                              : 'Criterio oficial OMS / NSF para adultos (18-64 años): 7 a 9 horas recomendadas'}
+                              ? 'Jóvenes (< 18): 8 a 10 h recomendadas'
+                              : 'Adultos (18-64): 7 a 9 h recomendadas'}
                           </p>
                         </div>
                       </div>
                       <span
                         className={cn(
-                          'text-xs font-black px-2.5 py-1 rounded-full shadow-xs',
+                          'text-xs font-black px-2 py-0.5 rounded-full',
                           parsedSleepHours < 6
                             ? 'bg-rose-600 text-white'
                             : parsedSleepHours < recommendedSleepMin
@@ -929,144 +872,85 @@ export function NewPatientPageView({
                         )}
                       >
                         {parsedSleepHours < recommendedSleepMin
-                          ? `Déficit de -${sleepDeficit} horas`
+                          ? `Déficit de -${sleepDeficit} h`
                           : 'Descanso Óptimo'}
                       </span>
                     </div>
 
                     {parsedSleepHours < 6 ? (
-                      <div className="space-y-2 pt-1">
-                        <p className="font-bold text-rose-950 text-xs">
-                          ⚠️ Consecuencias directas en la columna y la efectividad del tratamiento quiropráctico:
-                        </p>
+                      <div className="space-y-1.5 pt-0.5">
                         <div className="grid gap-2 sm:grid-cols-3">
-                          <div className="bg-white/90 p-3 rounded-xl border border-rose-200">
-                            <strong className="text-rose-900 block font-bold mb-1 text-[11px] uppercase tracking-wide">
-                              1. Deshidratación de Discos
+                          <div className="bg-white/90 p-2.5 rounded-lg border border-rose-200">
+                            <strong className="text-rose-900 block font-bold mb-0.5 text-[11px] uppercase tracking-wide">
+                              1. Deshidratación Discal
                             </strong>
                             <p className="text-[11px] text-slate-700 leading-snug">
-                              Los discos intervertebrales no tienen vasos sanguíneos directos; solo absorben agua y nutrientes en decúbito (reposo horizontal prolongado de mínimo 7h). Con 5 horas, amanecen deshidratados, rígidos y propensos a fisuras y hernias.
+                              Los discos intervertebrales requieren mínimo 7h horizontales para hidratarse.
                             </p>
                           </div>
-                          <div className="bg-white/90 p-3 rounded-xl border border-rose-200">
-                            <strong className="text-rose-900 block font-bold mb-1 text-[11px] uppercase tracking-wide">
-                              2. Mayor Dolor (Hiperalgesia)
+                          <div className="bg-white/90 p-2.5 rounded-lg border border-rose-200">
+                            <strong className="text-rose-900 block font-bold mb-0.5 text-[11px] uppercase tracking-wide">
+                              2. Mayor Dolor
                             </strong>
                             <p className="text-[11px] text-slate-700 leading-snug">
-                              Dormir 5 horas activa citoquinas inflamatorias (IL-6, PCR) y sensibiliza el sistema nervioso central. El cerebro magnifica las señales de dolor lumbar y cervical, duplicando la molestia.
+                              Eleva citoquinas inflamatorias y sensibiliza el sistema nervioso.
                             </p>
                           </div>
-                          <div className="bg-white/90 p-3 rounded-xl border border-rose-200">
-                            <strong className="text-rose-900 block font-bold mb-1 text-[11px] uppercase tracking-wide">
-                              3. Pérdida del Ajuste Quiropráctico
+                          <div className="bg-white/90 p-2.5 rounded-lg border border-rose-200">
+                            <strong className="text-rose-900 block font-bold mb-0.5 text-[11px] uppercase tracking-wide">
+                              3. Rigidez Postural
                             </strong>
                             <p className="text-[11px] text-slate-700 leading-snug">
-                              La falta de sueño profundo impide la relajación miofascial nocturna. Los espasmos y contracturas paravertebrales continúan jalando las vértebras a su posición desalineada previa.
+                              Espasmos miofasciales vuelven a desalinear las vértebras corregidas.
                             </p>
                           </div>
                         </div>
                       </div>
                     ) : parsedSleepHours < recommendedSleepMin ? (
-                      <div className="bg-white/80 p-3 rounded-xl border border-amber-200 text-slate-700 leading-relaxed text-xs">
+                      <div className="bg-white/80 p-2.5 rounded-lg border border-amber-200 text-slate-700 text-xs">
                         <p>
-                          El paciente duerme menos del umbral biológico mínimo de <strong>{recommendedSleepMin} horas</strong>. Se aconseja pautas de higiene del sueño para acelerar la regeneración de tejidos y estabilizar los ajustes articulares.
+                          Menos de <strong>{recommendedSleepMin} horas</strong> dificulta la regeneración de tejidos posturales.
                         </p>
                       </div>
                     ) : parsedSleepHours <= recommendedSleepMax ? (
-                      <div className="bg-white/80 p-3 rounded-xl border border-emerald-200 text-slate-700 leading-relaxed text-xs">
+                      <div className="bg-white/80 p-2.5 rounded-lg border border-emerald-200 text-slate-700 text-xs">
                         <p>
-                          Excelente hábito. Dormir entre <strong>{recommendedSleepMin} y {recommendedSleepMax} horas</strong> permite la descompresión intervertebral, adecuada segregación de hormona de crecimiento y relajación de la musculatura postural.
+                          Excelente hábito. Facilita la relajación miofascial y estabiliza los ajustes quiroprácticos.
                         </p>
                       </div>
                     ) : (
-                      <div className="bg-white/80 p-3 rounded-xl border border-sky-200 text-slate-700 leading-relaxed text-xs">
+                      <div className="bg-white/80 p-2.5 rounded-lg border border-sky-200 text-slate-700 text-xs">
                         <p>
-                          Dormir más de {recommendedSleepMax} horas con frecuencia puede indicar fatiga acumulada, hipersomnia o hipotonía muscular postural que requiere evaluación.
+                          Más de {recommendedSleepMax} horas puede asociarse a fatiga o hipotonía muscular.
                         </p>
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* Explicación médica detallada sobre el sueño (colapsable) */}
-                {showSleepHelp && (
-                  <div className="rounded-2xl border border-indigo-200 bg-indigo-50/80 p-4 text-xs space-y-3 text-indigo-950 leading-relaxed">
-                    <div className="flex items-center justify-between">
-                      <p className="font-extrabold text-sm text-indigo-900 flex items-center gap-1.5">
-                        <Moon className="h-4 w-4 text-indigo-600" />
-                        ¿Cuánto es lo normal que debe dormir un paciente? (Guía Médica y Quiropráctica)
-                      </p>
-                      <span className="text-[11px] font-semibold text-indigo-700 bg-indigo-100 px-2.5 py-0.5 rounded-full">
-                        OMS / CDC / National Sleep Foundation
-                      </span>
-                    </div>
-
-                    <p>
-                      El descanso nocturno no es solo tiempo de reposo mental; para la columna vertebral es el <strong>único momento en que se revierte la compresión gravitacional del día a día</strong> y se regeneran los tejidos articulares.
-                    </p>
-
-                    <div className="grid gap-2.5 sm:grid-cols-3 pt-1 font-medium text-[11px]">
-                      <div className="bg-white p-3 rounded-xl border border-indigo-100 shadow-xs">
-                        <strong className="text-slate-900 block text-xs mb-0.5">Adultos (18 a 64 años)</strong>
-                        <span className="text-emerald-700 font-extrabold text-sm block">7 a 9 horas</span>
-                        <p className="text-muted-foreground mt-1 leading-snug">
-                          Mínimo 7 horas para completar 4 a 5 ciclos de sueño REM/NREM y permitir la rehidratación completa de los discos intervertebrales.
-                        </p>
-                      </div>
-                      <div className="bg-white p-3 rounded-xl border border-indigo-100 shadow-xs">
-                        <strong className="text-slate-900 block text-xs mb-0.5">Adultos mayores (65+ años)</strong>
-                        <span className="text-cyan-700 font-extrabold text-sm block">7 a 8 horas</span>
-                        <p className="text-muted-foreground mt-1 leading-snug">
-                          Suelen tener despertares intermedios, pero alcanzar al menos 7 horas previene la rigidez articular matutina y dolor crónico.
-                        </p>
-                      </div>
-                      <div className="bg-white p-3 rounded-xl border border-indigo-100 shadow-xs">
-                        <strong className="text-slate-900 block text-xs mb-0.5">Jóvenes y Adolescentes</strong>
-                        <span className="text-indigo-700 font-extrabold text-sm block">8 a 10 horas</span>
-                        <p className="text-muted-foreground mt-1 leading-snug">
-                          Indispensable para el pico de secreción de hormona del crecimiento (GH), remodelación ósea y postura durante el desarrollo.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="bg-white p-3.5 rounded-xl border border-indigo-100 text-[11px] space-y-1.5 text-slate-700">
-                      <strong className="text-indigo-950 font-bold text-xs block">
-                        ¿Qué sucede clínicamente cuando un paciente duerme solo 5 horas?
-                      </strong>
-                      <p>
-                        • <strong>Efecto Esponja de los Discos (Imbibición Osmótica):</strong> Durante el día perdemos entre 1 y 2 cm de estatura porque el peso corporal exprime el agua de los discos. Rehidratarlos requiere de 7 a 8 horas seguidas en posición horizontal. Al dormir solo 5 horas, el disco amanece deshidratado y pierde hasta 30% de su capacidad para absorber impactos mecánicos.
-                      </p>
-                      <p>
-                        • <strong>Sensibilización Central e Hiperalgesia:</strong> La falta crónica de sueño suprime los mecanismos analgésicos naturales del cerebro y eleva los niveles de cortisol y citoquinas inflamatorias. El paciente se vuelve hipersensible al dolor.
-                      </p>
-                      <p>
-                        • <strong>Menor Retención de los Ajustes Quiroprácticos:</strong> La musculatura postural no logra la fase de relajación atónica del sueño profundo, manteniendo espasmos y contracturas que fuerzan a las vértebras corregidas a desalinearse de nuevo en poco tiempo.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-2 rounded-2xl bg-muted/40 p-4 border">
+                <div className="space-y-1.5 rounded-xl bg-slate-50/80 p-3 border">
                   <div className="flex justify-between items-center">
-                    <Label className="font-bold">CALIFIQUE SU DOLOR 1 A 10:</Label>
-                    <span className="text-lg font-black text-cyan-900">
+                    <Label className="font-bold text-xs uppercase tracking-wide text-slate-800">
+                      CALIFIQUE SU DOLOR 1 A 10:
+                    </Label>
+                    <span className="text-sm font-black text-cyan-900">
                       Nivel {painLevel} / 10
                     </span>
                   </div>
-                  <div className="grid grid-cols-5 sm:grid-cols-10 gap-2 pt-2">
+                  <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5 pt-1">
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => (
                       <button
                         key={val}
                         type="button"
                         onClick={() => setPainLevel(val)}
                         className={cn(
-                          'h-11 sm:h-12 rounded-xl font-black text-base sm:text-lg transition',
+                          'h-9 rounded-lg font-black text-sm transition',
                           painLevel === val
                             ? val <= 3
-                              ? 'bg-emerald-600 text-white shadow-md scale-105'
+                              ? 'bg-emerald-600 text-white shadow-xs scale-105'
                               : val <= 6
-                              ? 'bg-amber-500 text-white shadow-md scale-105'
-                              : 'bg-red-600 text-white shadow-md scale-105'
+                              ? 'bg-amber-500 text-white shadow-xs scale-105'
+                              : 'bg-red-600 text-white shadow-xs scale-105'
                             : 'bg-white hover:bg-slate-100 border text-slate-700'
                         )}
                       >
@@ -1074,26 +958,26 @@ export function NewPatientPageView({
                       </button>
                     ))}
                   </div>
-                  <div className="flex justify-between text-xs sm:text-sm font-bold text-slate-500 pt-1 px-1">
+                  <div className="flex justify-between text-[11px] text-muted-foreground pt-0.5 px-0.5">
                     <span>1: Leve</span>
                     <span>5: Moderado</span>
                     <span>10: Insupportable</span>
                   </div>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
                     <Label>CÓMO EVALÚA SU ESTADO DE SALUD GENERAL?</Label>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-4 gap-1.5">
                       {['Excelente', 'Bueno', 'Regular', 'Malo'].map((opt) => (
                         <button
                           key={opt}
                           type="button"
                           onClick={() => setGeneralHealth(opt)}
                           className={cn(
-                            'h-11 sm:h-12 rounded-xl text-xs sm:text-base font-extrabold border transition',
+                            'h-9 rounded-lg text-xs sm:text-sm font-bold border transition',
                             generalHealth === opt
-                              ? 'bg-cyan-700 text-white border-cyan-700 shadow-sm'
+                              ? 'bg-cyan-700 text-white border-cyan-700 shadow-xs'
                               : 'bg-white hover:bg-slate-50 text-slate-700'
                           )}
                         >
@@ -1103,14 +987,14 @@ export function NewPatientPageView({
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label>ESTÁS EMBARAZADA Y CUÁNTO TIEMPO</Label>
                     <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={() => setIsPregnant('No')}
                         className={cn(
-                          'h-11 sm:h-12 px-6 rounded-xl text-sm sm:text-base font-black border transition',
+                          'h-9 px-4 rounded-lg text-xs sm:text-sm font-bold border transition',
                           isPregnant === 'No'
                             ? 'bg-slate-900 text-white'
                             : 'bg-white hover:bg-slate-50 text-slate-700'
@@ -1122,7 +1006,7 @@ export function NewPatientPageView({
                         type="button"
                         onClick={() => setIsPregnant('Sí')}
                         className={cn(
-                          'h-11 sm:h-12 px-6 rounded-xl text-sm sm:text-base font-black border transition',
+                          'h-9 px-4 rounded-lg text-xs sm:text-sm font-bold border transition',
                           isPregnant === 'Sí'
                             ? 'bg-cyan-700 text-white'
                             : 'bg-white hover:bg-slate-50 text-slate-700'
@@ -1135,66 +1019,66 @@ export function NewPatientPageView({
                           placeholder="¿Cuánto tiempo? (ej. 20 semanas)"
                           value={pregnancyTime}
                           onChange={(e) => setPregnancyTime(e.target.value)}
-                          className="h-11 rounded-xl flex-1"
+                          className="h-9 rounded-lg flex-1 text-xs"
                         />
                       )}
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="meds">MEDICAMENTO QUE TOMA</Label>
                   <Input
                     id="meds"
                     placeholder="Analgésicos, antiinflamatorios, tratamientos crónicos..."
                     value={medications}
                     onChange={(e) => setMedications(e.target.value)}
-                    className="h-11 rounded-xl"
+                    className="h-10 rounded-xl"
                   />
                 </div>
               </div>
 
-              <div className="rounded-2xl border-2 border-cyan-100 bg-cyan-50/30 p-5 sm:p-6 space-y-6">
+              <div className="rounded-xl border border-cyan-100 bg-cyan-50/40 p-3.5 sm:p-4 space-y-3">
                 <div className="flex items-center gap-2">
-                  <HeartPulse className="size-5 text-cyan-800" />
-                  <h3 className="font-extrabold text-base text-cyan-950">
+                  <HeartPulse className="size-4.5 text-cyan-800" />
+                  <h3 className="font-extrabold text-xs sm:text-sm text-cyan-950 uppercase tracking-wide">
                     EVALUACIÓN DE LA COLUMNA VERTEBRAL
                   </h3>
                 </div>
 
-                <div className="grid gap-6 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-2">
                   {/* 1. INCLINACIÓN */}
-                  <div className="space-y-3 rounded-2xl bg-white p-4 sm:p-5 border shadow-sm">
+                  <div className="space-y-2 rounded-xl bg-white p-3 border shadow-xs">
                     <div className="flex items-center justify-between">
-                      <Label className="font-black text-sm uppercase tracking-wider text-slate-900">
+                      <Label className="font-bold text-xs uppercase tracking-wider text-slate-800">
                         INCLINACIÓN
                       </Label>
-                      <span className="text-xs font-bold text-cyan-800 bg-cyan-50 px-2.5 py-1 rounded-lg border border-cyan-200">
+                      <span className="text-[11px] font-semibold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200">
                         Escala 1 al 5
                       </span>
                     </div>
 
                     {/* Izquierda */}
-                    <div className="rounded-xl bg-slate-50 p-3 border">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <span className="text-sm font-black text-slate-800 flex items-center gap-2">
-                          <span className="size-6 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-xs font-black">I</span>
+                    <div className="rounded-lg bg-slate-50 p-2 border">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">I</span>
                           Izquierda:
                         </span>
-                        <span className="text-sm sm:text-base font-black text-cyan-900">
+                        <span className="text-xs font-black text-cyan-900">
                           Dolor: {spineInclinationLeft} / 5
                         </span>
                       </div>
-                      <div className="grid grid-cols-5 gap-2">
+                      <div className="grid grid-cols-5 gap-1.5">
                         {['1', '2', '3', '4', '5'].map((lvl) => (
                           <button
                             key={lvl}
                             type="button"
                             onClick={() => setSpineInclinationLeft(lvl)}
                             className={cn(
-                              'h-11 sm:h-12 rounded-xl text-base sm:text-lg font-black transition border',
+                              'h-8.5 rounded-lg text-xs font-black transition border',
                               spineInclinationLeft === lvl
-                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-sm ring-2 ring-cyan-400/30'
+                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-xs ring-1 ring-cyan-400/40'
                                 : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
                             )}
                           >
@@ -1205,26 +1089,26 @@ export function NewPatientPageView({
                     </div>
 
                     {/* Derecha */}
-                    <div className="rounded-xl bg-slate-50 p-3 border">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <span className="text-sm font-black text-slate-800 flex items-center gap-2">
-                          <span className="size-6 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-xs font-black">D</span>
+                    <div className="rounded-lg bg-slate-50 p-2 border">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">D</span>
                           Derecha:
                         </span>
-                        <span className="text-sm sm:text-base font-black text-cyan-900">
+                        <span className="text-xs font-black text-cyan-900">
                           Dolor: {spineInclinationRight} / 5
                         </span>
                       </div>
-                      <div className="grid grid-cols-5 gap-2">
+                      <div className="grid grid-cols-5 gap-1.5">
                         {['1', '2', '3', '4', '5'].map((lvl) => (
                           <button
                             key={lvl}
                             type="button"
                             onClick={() => setSpineInclinationRight(lvl)}
                             className={cn(
-                              'h-11 sm:h-12 rounded-xl text-base sm:text-lg font-black transition border',
+                              'h-8.5 rounded-lg text-xs font-black transition border',
                               spineInclinationRight === lvl
-                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-sm ring-2 ring-cyan-400/30'
+                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-xs ring-1 ring-cyan-400/40'
                                 : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
                             )}
                           >
@@ -1236,37 +1120,37 @@ export function NewPatientPageView({
                   </div>
 
                   {/* 2. ROTACIÓN */}
-                  <div className="space-y-3 rounded-2xl bg-white p-4 sm:p-5 border shadow-sm">
+                  <div className="space-y-2 rounded-xl bg-white p-3 border shadow-xs">
                     <div className="flex items-center justify-between">
-                      <Label className="font-black text-sm uppercase tracking-wider text-slate-900">
+                      <Label className="font-bold text-xs uppercase tracking-wider text-slate-800">
                         ROTACIÓN
                       </Label>
-                      <span className="text-xs font-bold text-cyan-800 bg-cyan-50 px-2.5 py-1 rounded-lg border border-cyan-200">
+                      <span className="text-[11px] font-semibold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200">
                         Escala 1 al 5
                       </span>
                     </div>
 
                     {/* Izquierda */}
-                    <div className="rounded-xl bg-slate-50 p-3 border">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <span className="text-sm font-black text-slate-800 flex items-center gap-2">
-                          <span className="size-6 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-xs font-black">I</span>
+                    <div className="rounded-lg bg-slate-50 p-2 border">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">I</span>
                           Izquierda:
                         </span>
-                        <span className="text-sm sm:text-base font-black text-cyan-900">
+                        <span className="text-xs font-black text-cyan-900">
                           Dolor: {spineRotationLeft} / 5
                         </span>
                       </div>
-                      <div className="grid grid-cols-5 gap-2">
+                      <div className="grid grid-cols-5 gap-1.5">
                         {['1', '2', '3', '4', '5'].map((lvl) => (
                           <button
                             key={lvl}
                             type="button"
                             onClick={() => setSpineRotationLeft(lvl)}
                             className={cn(
-                              'h-11 sm:h-12 rounded-xl text-base sm:text-lg font-black transition border',
+                              'h-8.5 rounded-lg text-xs font-black transition border',
                               spineRotationLeft === lvl
-                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-sm ring-2 ring-cyan-400/30'
+                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-xs ring-1 ring-cyan-400/40'
                                 : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
                             )}
                           >
@@ -1277,26 +1161,26 @@ export function NewPatientPageView({
                     </div>
 
                     {/* Derecha */}
-                    <div className="rounded-xl bg-slate-50 p-3 border">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <span className="text-sm font-black text-slate-800 flex items-center gap-2">
-                          <span className="size-6 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-xs font-black">D</span>
+                    <div className="rounded-lg bg-slate-50 p-2 border">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">D</span>
                           Derecha:
                         </span>
-                        <span className="text-sm sm:text-base font-black text-cyan-900">
+                        <span className="text-xs font-black text-cyan-900">
                           Dolor: {spineRotationRight} / 5
                         </span>
                       </div>
-                      <div className="grid grid-cols-5 gap-2">
+                      <div className="grid grid-cols-5 gap-1.5">
                         {['1', '2', '3', '4', '5'].map((lvl) => (
                           <button
                             key={lvl}
                             type="button"
                             onClick={() => setSpineRotationRight(lvl)}
                             className={cn(
-                              'h-11 sm:h-12 rounded-xl text-base sm:text-lg font-black transition border',
+                              'h-8.5 rounded-lg text-xs font-black transition border',
                               spineRotationRight === lvl
-                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-sm ring-2 ring-cyan-400/30'
+                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-xs ring-1 ring-cyan-400/40'
                                 : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
                             )}
                           >
@@ -1308,28 +1192,28 @@ export function NewPatientPageView({
                   </div>
 
                   {/* 3. EXTENSIÓN */}
-                  <div className="space-y-3 rounded-2xl bg-white p-4 sm:p-5 border shadow-sm">
+                  <div className="space-y-2 rounded-xl bg-white p-3 border shadow-xs">
                     <div className="flex items-center justify-between">
-                      <Label className="font-black text-sm uppercase tracking-wider text-slate-900">
+                      <Label className="font-bold text-xs uppercase tracking-wider text-slate-800">
                         EXTENSIÓN
                       </Label>
-                      <span className="text-sm sm:text-base font-black text-cyan-900">
+                      <span className="text-xs font-black text-cyan-900">
                         Dolor: {spineExtension} / 5
                       </span>
                     </div>
-                    <p className="text-xs sm:text-sm text-slate-500 font-medium">
-                      Nivel de dolor o molestia al realizar extensión posterior
+                    <p className="text-[11px] text-slate-500 font-medium">
+                      Nivel de molestia al realizar extensión posterior
                     </p>
-                    <div className="grid grid-cols-5 gap-2 pt-1">
+                    <div className="grid grid-cols-5 gap-1.5 pt-0.5">
                       {['1', '2', '3', '4', '5'].map((lvl) => (
                         <button
                           key={lvl}
                           type="button"
                           onClick={() => setSpineExtension(lvl)}
                           className={cn(
-                            'h-11 sm:h-12 rounded-xl text-base sm:text-lg font-black transition border',
+                            'h-8.5 rounded-lg text-xs font-black transition border',
                             spineExtension === lvl
-                              ? 'bg-slate-900 text-white border-slate-900 shadow-sm ring-2 ring-slate-400/30'
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-xs ring-1 ring-slate-400/40'
                               : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
                           )}
                         >
@@ -1337,44 +1221,44 @@ export function NewPatientPageView({
                         </button>
                       ))}
                     </div>
-                    <div className="flex justify-between text-xs font-semibold text-slate-500 px-1">
+                    <div className="flex justify-between text-[11px] text-slate-400 font-medium px-0.5">
                       <span>1: Sin dolor</span>
-                      <span>5: Dolor severo</span>
+                      <span>5: Severo</span>
                     </div>
                   </div>
 
                   {/* 4. ILÍACO */}
-                  <div className="space-y-3 rounded-2xl bg-white p-4 sm:p-5 border shadow-sm">
+                  <div className="space-y-2 rounded-xl bg-white p-3 border shadow-xs">
                     <div className="flex items-center justify-between">
-                      <Label className="font-black text-sm uppercase tracking-wider text-slate-900">
+                      <Label className="font-bold text-xs uppercase tracking-wider text-slate-800">
                         ILÍACO
                       </Label>
-                      <span className="text-xs font-bold text-cyan-800 bg-cyan-50 px-2.5 py-1 rounded-lg border border-cyan-200">
+                      <span className="text-[11px] font-semibold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200">
                         Escala 1 al 5
                       </span>
                     </div>
 
                     {/* Izquierdo */}
-                    <div className="rounded-xl bg-slate-50 p-3 border">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <span className="text-sm font-black text-slate-800 flex items-center gap-2">
-                          <span className="size-6 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-xs font-black">I</span>
+                    <div className="rounded-lg bg-slate-50 p-2 border">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">I</span>
                           Izquierdo:
                         </span>
-                        <span className="text-sm sm:text-base font-black text-cyan-900">
+                        <span className="text-xs font-black text-cyan-900">
                           Dolor: {iliacLeft} / 5
                         </span>
                       </div>
-                      <div className="grid grid-cols-5 gap-2">
+                      <div className="grid grid-cols-5 gap-1.5">
                         {['1', '2', '3', '4', '5'].map((lvl) => (
                           <button
                             key={lvl}
                             type="button"
                             onClick={() => setIliacLeft(lvl)}
                             className={cn(
-                              'h-11 sm:h-12 rounded-xl text-base sm:text-lg font-black transition border',
+                              'h-8.5 rounded-lg text-xs font-black transition border',
                               iliacLeft === lvl
-                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-sm ring-2 ring-cyan-400/30'
+                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-xs ring-1 ring-cyan-400/40'
                                 : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
                             )}
                           >
@@ -1385,26 +1269,26 @@ export function NewPatientPageView({
                     </div>
 
                     {/* Derecho */}
-                    <div className="rounded-xl bg-slate-50 p-3 border">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <span className="text-sm font-black text-slate-800 flex items-center gap-2">
-                          <span className="size-6 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-xs font-black">D</span>
+                    <div className="rounded-lg bg-slate-50 p-2 border">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">D</span>
                           Derecho:
                         </span>
-                        <span className="text-sm sm:text-base font-black text-cyan-900">
+                        <span className="text-xs font-black text-cyan-900">
                           Dolor: {iliacRight} / 5
                         </span>
                       </div>
-                      <div className="grid grid-cols-5 gap-2">
+                      <div className="grid grid-cols-5 gap-1.5">
                         {['1', '2', '3', '4', '5'].map((lvl) => (
                           <button
                             key={lvl}
                             type="button"
                             onClick={() => setIliacRight(lvl)}
                             className={cn(
-                              'h-11 sm:h-12 rounded-xl text-base sm:text-lg font-black transition border',
+                              'h-8.5 rounded-lg text-xs font-black transition border',
                               iliacRight === lvl
-                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-sm ring-2 ring-cyan-400/30'
+                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-xs ring-1 ring-cyan-400/40'
                                 : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
                             )}
                           >
@@ -1415,18 +1299,18 @@ export function NewPatientPageView({
                     </div>
                   </div>
 
-                  <div className="space-y-2.5 rounded-xl bg-white p-4 sm:p-5 border">
-                    <Label className="font-black text-sm uppercase tracking-wider text-slate-900">
+                  <div className="space-y-1.5 rounded-xl bg-white p-3 border">
+                    <Label className="font-bold text-xs uppercase tracking-wider text-slate-800">
                       MARCHA CON PIE PUNTAS
                     </Label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-1.5">
                       {['Normal', 'Dificultad', 'Dolor', 'No puede'].map((opt) => (
                         <button
                           key={opt}
                           type="button"
                           onClick={() => setGaitTiptoes(opt)}
                           className={cn(
-                            'h-11 sm:h-12 rounded-xl text-sm sm:text-base font-black border transition',
+                            'h-8.5 rounded-lg text-xs font-bold border transition',
                             gaitTiptoes === opt ? 'bg-slate-900 text-white border-slate-900' : 'bg-white hover:bg-slate-50 text-slate-800'
                           )}
                         >
@@ -1436,18 +1320,18 @@ export function NewPatientPageView({
                     </div>
                   </div>
 
-                  <div className="space-y-2.5 rounded-xl bg-white p-4 sm:p-5 border">
-                    <Label className="font-black text-sm uppercase tracking-wider text-slate-900">
+                  <div className="space-y-1.5 rounded-xl bg-white p-3 border">
+                    <Label className="font-bold text-xs uppercase tracking-wider text-slate-800">
                       MARCHA CON PIE TALONES
                     </Label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-1.5">
                       {['Normal', 'Dificultad', 'Dolor', 'No puede'].map((opt) => (
                         <button
                           key={opt}
                           type="button"
                           onClick={() => setGaitHeels(opt)}
                           className={cn(
-                            'h-11 sm:h-12 rounded-xl text-sm sm:text-base font-black border transition',
+                            'h-8.5 rounded-lg text-xs font-bold border transition',
                             gaitHeels === opt ? 'bg-slate-900 text-white border-slate-900' : 'bg-white hover:bg-slate-50 text-slate-800'
                           )}
                         >
@@ -1485,51 +1369,58 @@ export function NewPatientPageView({
           </Card>
         )}        {/* ==================== PÁGINA 2 ==================== */}
         {step === 2 && (
-          <Card className="rounded-3xl border-0 shadow-sm bg-white">
-            <CardHeader className="pb-4 border-b">
-              <div className="flex items-center gap-3">
-                <span className="grid size-11 place-items-center rounded-2xl bg-cyan-100 text-cyan-900">
-                  <Activity className="size-5" />
-                </span>
-                <div>
-                  <CardTitle className="text-xl font-extrabold text-slate-950">
-                    Página 2: Evaluación Postural y Palpación
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Posición prono, largo de piernas, palpación estática y dinámica, escaneos lumbar y torácico.
-                  </p>
+          <Card className="rounded-2xl border-0 shadow-sm bg-white overflow-hidden">
+            <CardHeader className="py-3 px-4 sm:px-6 border-b bg-slate-50/50">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="grid size-7 place-items-center rounded-lg bg-cyan-700 text-white text-xs font-black shadow-xs">
+                    2 / 3
+                  </span>
+                  <div>
+                    <CardTitle className="text-base sm:text-lg font-black text-slate-900 leading-tight">
+                      Página 2: Evaluación Postural y Palpación
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground hidden sm:block">
+                      Posición prono, largo de piernas, palpación estática y dinámica, escaneos lumbar y torácico.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0" title="Paso 2 de 3">
+                  <span className="h-1.5 w-2 rounded-full bg-slate-200" />
+                  <span className="h-1.5 w-6 rounded-full bg-cyan-700" />
+                  <span className="h-1.5 w-2 rounded-full bg-slate-200" />
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-6 sm:p-8 space-y-7">
-              <div>
-                <h3 className="text-sm font-extrabold uppercase tracking-wider text-cyan-800 mb-4">
+            <CardContent className="p-4 sm:p-5 space-y-3.5">
+              <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-3.5 space-y-3">
+                <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-cyan-900">
                   Evaluación Postural y Miembros Inferiores
                 </h3>
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div className="space-y-2">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="pronePos">POSICIÓN PRONO</Label>
                     <Input
                       id="pronePos"
                       placeholder="Observaciones en prono (simetría, inclinación...)"
                       value={pronePosition}
                       onChange={(e) => setPronePosition(e.target.value)}
-                      className="h-11 rounded-xl"
+                      className="h-10 rounded-xl"
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label>LARGO DE LAS PIERNAS: DERECHA / IZQUIERDA</Label>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1.5">
                       {(['Derecha', 'Izquierda', 'Iguales'] as const).map((side) => (
                         <button
                           key={side}
                           type="button"
                           onClick={() => setLegLengthSide(side)}
                           className={cn(
-                            'h-11 sm:h-12 flex-1 rounded-xl text-sm sm:text-base font-black border transition',
+                            'h-9 flex-1 rounded-lg text-xs sm:text-sm font-bold border transition',
                             legLengthSide === side
-                              ? 'bg-cyan-700 text-white border-cyan-700 shadow-sm'
+                              ? 'bg-cyan-700 text-white border-cyan-700 shadow-xs'
                               : 'bg-white hover:bg-slate-50 text-slate-800'
                           )}
                         >
@@ -1542,26 +1433,26 @@ export function NewPatientPageView({
                         placeholder="Diferencia aprox. (ej. Corta 1 cm, Corta 5 mm)"
                         value={legLengthDiff}
                         onChange={(e) => setLegLengthDiff(e.target.value)}
-                        className="h-11 rounded-xl mt-2 font-medium"
+                        className="h-9 rounded-lg mt-1.5 font-medium text-xs sm:text-sm"
                       />
                     )}
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label>SACRO ILÍACO DOLOR: ( SI ) / ( NO )</Label>
-                    <div className="space-y-2">
-                      <div className="flex gap-2">
+                    <div className="space-y-1.5">
+                      <div className="flex gap-1.5">
                         {(['SI', 'NO'] as const).map((opt) => (
                           <button
                             key={opt}
                             type="button"
                             onClick={() => setSacroiliacPain(opt)}
                             className={cn(
-                              'h-11 sm:h-12 flex-1 rounded-xl text-base font-black border transition',
+                              'h-9 flex-1 rounded-lg text-xs sm:text-sm font-black border transition',
                               sacroiliacPain === opt
                                 ? opt === 'SI'
-                                ? 'bg-amber-600 text-white border-amber-600 shadow-sm'
-                                : 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                                ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                                : 'bg-slate-900 text-white border-slate-900 shadow-xs'
                                 : 'bg-white hover:bg-slate-50 text-slate-800'
                             )}
                           >
@@ -1570,14 +1461,14 @@ export function NewPatientPageView({
                         ))}
                       </div>
                       {sacroiliacPain === 'SI' && (
-                        <div className="flex gap-2 pt-1">
+                        <div className="flex gap-1.5 pt-0.5">
                           {(['Derecho', 'Izquierdo', 'Bilateral'] as const).map((side) => (
                             <button
                               key={side}
                               type="button"
                               onClick={() => setSacroiliacSide(side)}
                               className={cn(
-                                'h-11 flex-1 rounded-xl text-xs sm:text-sm font-bold border transition',
+                                'h-8 flex-1 rounded-lg text-xs font-bold border transition',
                                 sacroiliacSide === side ? 'bg-cyan-700 text-white font-black' : 'bg-white'
                               )}
                             >
@@ -1589,49 +1480,49 @@ export function NewPatientPageView({
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="cervicalSynd">SÍNDROME CERVICAL</Label>
                     <Input
                       id="cervicalSynd"
                       placeholder="Observaciones de síndrome cervical..."
                       value={cervicalSyndrome}
                       onChange={(e) => setCervicalSyndrome(e.target.value)}
-                      className="h-11 rounded-xl"
+                      className="h-10 rounded-xl"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-5 space-y-5">
-                <h3 className="text-sm font-extrabold uppercase tracking-wider text-cyan-800">
+              <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-3.5 space-y-3">
+                <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-cyan-900">
                   Palpación y Resistencia
                 </h3>
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div className="space-y-2">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="dynPalp">PALPACIÓN DINÁMICA</Label>
                     <Textarea
                       id="dynPalp"
                       placeholder="Respuesta al movimiento articular y dinamismo segmentario..."
                       value={dynamicPalpation}
                       onChange={(e) => setDynamicPalpation(e.target.value)}
-                      className="min-h-20 rounded-xl bg-white"
+                      className="min-h-16 rounded-xl bg-white"
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="statPalp">PALPACIÓN ESTÁTICA</Label>
                     <Textarea
                       id="statPalp"
                       placeholder="Zonas edematosas, dolor a la presión, desalineaciones..."
                       value={staticPalpation}
                       onChange={(e) => setStaticPalpation(e.target.value)}
-                      className="min-h-20 rounded-xl bg-white"
+                      className="min-h-16 rounded-xl bg-white"
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label>PIERNA QUE MÁS RESISTE: DERECHA ( D ) / IZQUIERDA ( I )</Label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-1.5">
                       {[
                         { id: 'D', label: 'Derecha ( D )' },
                         { id: 'I', label: 'Izquierda ( I )' },
@@ -1642,8 +1533,8 @@ export function NewPatientPageView({
                           type="button"
                           onClick={() => setStrongerLeg(item.id as 'D' | 'I' | 'Neutro')}
                           className={cn(
-                            'h-11 sm:h-12 rounded-xl text-sm sm:text-base font-black border transition',
-                            strongerLeg === item.id ? 'bg-cyan-700 text-white border-cyan-700 shadow-sm' : 'bg-white hover:bg-slate-50 text-slate-800'
+                            'h-9 rounded-lg text-xs sm:text-sm font-bold border transition',
+                            strongerLeg === item.id ? 'bg-cyan-700 text-white border-cyan-700 shadow-xs' : 'bg-white hover:bg-slate-50 text-slate-800'
                           )}
                         >
                           {item.label}
@@ -1652,46 +1543,46 @@ export function NewPatientPageView({
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="muscleTens">TENSIÓN MUSCULAR O SENSIBILIDAD</Label>
                     <Input
                       id="muscleTens"
                       placeholder="Hipertonía, espasmo lumbar, trapecios, etc."
                       value={muscleTension}
                       onChange={(e) => setMuscleTension(e.target.value)}
-                      className="h-11 rounded-xl bg-white"
+                      className="h-10 rounded-xl bg-white"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-2xl border-2 border-slate-200 bg-white p-5 space-y-6">
-                <h3 className="text-sm font-extrabold uppercase tracking-wider text-slate-900">
+              <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-3">
+                <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-slate-900">
                   Escaneos Segmentarios
                 </h3>
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <div className="space-y-3 rounded-2xl bg-cyan-50/40 p-4 border border-cyan-100">
-                    <h4 className="font-extrabold text-sm text-cyan-950">LUMBAR ESCANEO</h4>
-                    <div className="space-y-2">
-                      <Label htmlFor="lumbHypo">HIPOMOVILIDAD: ( )</Label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2 rounded-xl bg-cyan-50/40 p-3 border border-cyan-100">
+                    <h4 className="font-extrabold text-xs text-cyan-950 uppercase">LUMBAR ESCANEO</h4>
+                    <div className="space-y-1">
+                      <Label htmlFor="lumbHypo" className="text-xs">HIPOMOVILIDAD</Label>
                       <Input
                         id="lumbHypo"
                         placeholder="Niveles con hipomovilidad (ej. L4-L5, L5-S1)"
                         value={lumbarHypomobility}
                         onChange={(e) => setLumbarHypomobility(e.target.value)}
-                        className="h-11 rounded-xl bg-white"
+                        className="h-9 rounded-lg bg-white"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label>SÍ O NO: ( )</Label>
-                      <div className="flex gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">SÍ O NO</Label>
+                      <div className="flex gap-1.5">
                         {['SI', 'NO'].map((opt) => (
                           <button
                             key={opt}
                             type="button"
                             onClick={() => setLumbarYesNo(opt as 'SI' | 'NO')}
                             className={cn(
-                              'h-11 flex-1 rounded-xl text-sm font-black border transition',
+                              'h-8.5 flex-1 rounded-lg text-xs font-black border transition',
                               lumbarYesNo === opt ? 'bg-slate-900 text-white border-slate-900' : 'bg-white hover:bg-slate-50 text-slate-800'
                             )}
                           >
@@ -1700,67 +1591,67 @@ export function NewPatientPageView({
                         ))}
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lumbScanNotes">Notas Lumbar</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="lumbScanNotes" className="text-xs">Notas Lumbar</Label>
                       <Input
                         id="lumbScanNotes"
                         placeholder="Detalles adicionales del escaneo lumbar"
                         value={lumbarScan}
                         onChange={(e) => setLumbarScan(e.target.value)}
-                        className="h-11 rounded-xl bg-white"
+                        className="h-9 rounded-lg bg-white"
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-3 rounded-2xl bg-cyan-50/40 p-4 border border-cyan-100">
-                    <h4 className="font-extrabold text-sm text-cyan-950">TORÁCICO ESCANEO</h4>
-                    <div className="space-y-2">
-                      <Label htmlFor="thorHypo">HIPOMOVILIDAD: ( )</Label>
+                  <div className="space-y-2 rounded-xl bg-cyan-50/40 p-3 border border-cyan-100">
+                    <h4 className="font-extrabold text-xs text-cyan-950 uppercase">TORÁCICO ESCANEO</h4>
+                    <div className="space-y-1">
+                      <Label htmlFor="thorHypo" className="text-xs">HIPOMOVILIDAD</Label>
                       <Input
                         id="thorHypo"
                         placeholder="Niveles torácicos con hipomovilidad (ej. T3-T6)"
                         value={thoracicHypomobility}
                         onChange={(e) => setThoracicHypomobility(e.target.value)}
-                        className="h-11 rounded-xl bg-white"
+                        className="h-9 rounded-lg bg-white"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="thorList">NIVEL LISTADO: ( )</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="thorList" className="text-xs">NIVEL LISTADO</Label>
                       <Input
                         id="thorList"
                         placeholder="Listado quiropráctico torácico (ej. T4 PL, T6 PR)"
                         value={thoracicListingLevel}
                         onChange={(e) => setThoracicListingLevel(e.target.value)}
-                        className="h-11 rounded-xl bg-white"
+                        className="h-9 rounded-lg bg-white"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="thorScanNotes">Notas Torácico</Label>
+                    <div className="space-y-1">
+                      <Label htmlFor="thorScanNotes" className="text-xs">Notas Torácico</Label>
                       <Input
                         id="thorScanNotes"
                         placeholder="Detalles adicionales del escaneo torácico"
                         value={thoracicScan}
                         onChange={(e) => setThoracicScan(e.target.value)}
-                        className="h-11 rounded-xl bg-white"
+                        className="h-9 rounded-lg bg-white"
                       />
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-between pt-2">
+              <div className="flex justify-between pt-2 border-t mt-3">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => changeStep(1)}
-                  className="h-12 px-6 rounded-xl font-bold border-slate-300 hover:bg-slate-100"
+                  className="h-10 px-5 rounded-xl font-bold border-slate-300 hover:bg-slate-100 text-sm"
                 >
                   <ArrowLeft className="mr-2 size-4" /> Anterior: Página 1
                 </Button>
                 <Button
                   type="button"
                   onClick={() => changeStep(3)}
-                  className="h-12 px-7 rounded-xl font-bold bg-cyan-700 hover:bg-cyan-800 text-white shadow-md"
+                  className="h-10 px-6 rounded-xl font-bold bg-cyan-700 hover:bg-cyan-800 text-white shadow-md text-sm"
                 >
                   Continuar a Página 3: Cervical, Plan y Pago <ArrowRight className="ml-2 size-4" />
                 </Button>
@@ -1771,43 +1662,50 @@ export function NewPatientPageView({
 
         {/* ==================== PÁGINA 3 ==================== */}
         {step === 3 && (
-          <Card className="rounded-3xl border-0 shadow-sm bg-white">
-            <CardHeader className="pb-4 border-b">
-              <div className="flex items-center gap-3">
-                <span className="grid size-11 place-items-center rounded-2xl bg-cyan-100 text-cyan-900">
-                  <Sparkles className="size-5" />
-                </span>
-                <div>
-                  <CardTitle className="text-xl font-extrabold text-slate-950">
-                    Página 3: Evaluación Cervical y Plan de Tratamiento
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Ajuste cervical, serie listada, plan de sesiones y emisión de tarjeta QR.
-                  </p>
+          <Card className="rounded-2xl border-0 shadow-sm bg-white overflow-hidden">
+            <CardHeader className="py-3 px-4 sm:px-6 border-b bg-slate-50/50">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="grid size-7 place-items-center rounded-lg bg-cyan-700 text-white text-xs font-black shadow-xs">
+                    3 / 3
+                  </span>
+                  <div>
+                    <CardTitle className="text-base sm:text-lg font-black text-slate-900 leading-tight">
+                      Página 3: Evaluación Cervical, Plan de Tratamiento y Pago
+                    </CardTitle>
+                    <p className="text-xs text-muted-foreground hidden sm:block">
+                      Ajuste cervical, serie listada, plan de sesiones y cobro de abono inicial.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0" title="Paso 3 de 3">
+                  <span className="h-1.5 w-2 rounded-full bg-slate-200" />
+                  <span className="h-1.5 w-2 rounded-full bg-slate-200" />
+                  <span className="h-1.5 w-6 rounded-full bg-cyan-700" />
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-6 sm:p-8 space-y-7">
-              <div className="rounded-2xl border-2 border-cyan-100 bg-cyan-50/40 p-5 sm:p-6 space-y-5">
-                <h3 className="text-sm font-extrabold uppercase tracking-wider text-cyan-950">
+            <CardContent className="p-4 sm:p-5 space-y-3.5">
+              <div className="rounded-xl border border-cyan-100 bg-cyan-50/40 p-3.5 space-y-3">
+                <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-cyan-950">
                   Evaluación Cervical
                 </h3>
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div className="space-y-2 sm:col-span-2">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5 sm:col-span-2">
                     <Label htmlFor="cervRot">CERVICAL: C2 y C7 Rotación</Label>
                     <Input
                       id="cervRot"
                       placeholder="Ej. C2 Rotación Derecha, C7 Rotación Izquierda con fijación"
                       value={cervicalC2C7Rotation}
                       onChange={(e) => setCervicalC2C7Rotation(e.target.value)}
-                      className="h-11 rounded-xl bg-white"
+                      className="h-10 rounded-xl bg-white"
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="cervListing">NIVEL LISTADO (C1 al C7)</Label>
                     <Select value={cervicalListingLevel} onValueChange={setCervicalListingLevel}>
-                      <SelectTrigger id="cervListing" className="h-11 rounded-xl bg-white">
+                      <SelectTrigger id="cervListing" className="h-10 rounded-xl bg-white">
                         <SelectValue placeholder="Seleccionar nivel" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1820,10 +1718,10 @@ export function NewPatientPageView({
                     </Select>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="cervSeries">SERIE: 1 al 7</Label>
                     <Select value={cervicalSeries} onValueChange={setCervicalSeries}>
-                      <SelectTrigger id="cervSeries" className="h-11 rounded-xl bg-white">
+                      <SelectTrigger id="cervSeries" className="h-10 rounded-xl bg-white">
                         <SelectValue placeholder="Seleccionar serie" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1836,26 +1734,26 @@ export function NewPatientPageView({
                     </Select>
                   </div>
 
-                  <div className="space-y-2 sm:col-span-2">
+                  <div className="space-y-1.5 sm:col-span-2">
                     <Label htmlFor="clinNotes">INDICACIONES Y NOTAS CLÍNICAS</Label>
                     <Textarea
                       id="clinNotes"
                       placeholder="Recomendaciones quiroprácticas, técnicas de ajuste (Gonstead, Thompson, Diversified), post-atención..."
                       value={clinicalNotes}
                       onChange={(e) => setClinicalNotes(e.target.value)}
-                      className="min-h-24 rounded-xl bg-white"
+                      className="min-h-16 rounded-xl bg-white"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-2xl border-2 border-emerald-100 bg-emerald-50/40 p-5 sm:p-6 space-y-5">
-                <div className="flex items-center gap-2.5">
-                  <span className="grid size-10 place-items-center rounded-xl bg-emerald-700 text-white shadow-sm">
-                    <WalletCards className="size-5" />
+              <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/30 p-3.5 space-y-3.5">
+                <div className="flex items-center gap-2">
+                  <span className="grid size-8 place-items-center rounded-lg bg-emerald-700 text-white shadow-xs">
+                    <WalletCards className="size-4" />
                   </span>
                   <div>
-                    <h3 className="font-extrabold text-base text-emerald-950">
+                    <h3 className="font-extrabold text-sm sm:text-base text-emerald-950">
                       Plan de Tratamiento, Sesiones y Pago
                     </h3>
                     <p className="text-xs text-muted-foreground">
@@ -1864,8 +1762,8 @@ export function NewPatientPageView({
                   </div>
                 </div>
 
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                  <div className="space-y-2">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="space-y-1.5">
                     <Label htmlFor="totSessions" className="font-bold text-xs uppercase tracking-wider text-slate-700">
                       PLAN DE SESIONES
                     </Label>
@@ -1876,10 +1774,10 @@ export function NewPatientPageView({
                           type="button"
                           onClick={() => setTotalSessions(num)}
                           className={cn(
-                            'h-11 sm:h-12 flex-1 rounded-xl text-sm sm:text-base font-black border transition',
+                            'h-9 flex-1 rounded-lg text-xs sm:text-sm font-black border transition',
                             totalSessions === num
-                              ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                              : 'bg-white hover:bg-slate-100 text-slate-800'
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                              : 'bg-white hover:bg-slate-50 text-slate-800'
                           )}
                         >
                           {num}
@@ -1894,11 +1792,11 @@ export function NewPatientPageView({
                       placeholder="Otro número"
                       value={totalSessions}
                       onChange={(e) => setTotalSessions(e.target.value)}
-                      className="h-11 rounded-xl bg-white font-medium"
+                      className="h-10 rounded-xl bg-white font-medium"
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="sessPerWeek" className="font-bold text-xs uppercase tracking-wider text-slate-700">
                       FRECUENCIA SEMANAL
                     </Label>
@@ -1909,10 +1807,10 @@ export function NewPatientPageView({
                           type="button"
                           onClick={() => setSessionsPerWeek(freq)}
                           className={cn(
-                            'h-11 sm:h-12 flex-1 rounded-xl text-xs sm:text-sm font-black border transition',
+                            'h-9 flex-1 rounded-lg text-xs sm:text-sm font-black border transition',
                             sessionsPerWeek === freq
-                              ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
-                              : 'bg-white hover:bg-slate-100 text-slate-800'
+                              ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                              : 'bg-white hover:bg-slate-50 text-slate-800'
                           )}
                         >
                           {freq}x sem
@@ -1927,11 +1825,11 @@ export function NewPatientPageView({
                       placeholder="Otra frec."
                       value={sessionsPerWeek}
                       onChange={(e) => setSessionsPerWeek(e.target.value)}
-                      className="h-11 rounded-xl bg-white font-medium"
+                      className="h-10 rounded-xl bg-white font-medium"
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="appDate" className="font-bold text-xs uppercase tracking-wider text-slate-700">
                       FECHA PRIMERA CITA
                     </Label>
@@ -1940,11 +1838,11 @@ export function NewPatientPageView({
                       type="date"
                       value={appointmentDate}
                       onChange={(e) => setAppointmentDate(e.target.value)}
-                      className="h-11 rounded-xl bg-white font-medium"
+                      className="h-10 rounded-xl bg-white font-medium"
                     />
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="appTime" className="font-bold text-xs uppercase tracking-wider text-slate-700">
                       HORA DE LA CITA
                     </Label>
@@ -1953,15 +1851,15 @@ export function NewPatientPageView({
                       type="time"
                       value={appointmentTime}
                       onChange={(e) => setAppointmentTime(e.target.value)}
-                      className="h-11 rounded-xl bg-white font-medium"
+                      className="h-10 rounded-xl bg-white font-medium"
                     />
                   </div>
                 </div>
 
                 {/* Bloque Financiero y Pagos */}
-                <div className="rounded-2xl bg-white p-5 border border-emerald-200 space-y-4 shadow-xs">
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    <div className="space-y-2">
+                <div className="rounded-xl bg-white p-3.5 border border-emerald-200 space-y-3 shadow-xs">
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="space-y-1.5">
                       <Label htmlFor="totAmount" className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
                         <Banknote className="size-4 text-emerald-700" />
                         MONTO TOTAL DEL PLAN (S/)
@@ -1976,12 +1874,12 @@ export function NewPatientPageView({
                           placeholder="Ej. 800.00"
                           value={totalAmount}
                           onChange={(e) => setTotalAmount(e.target.value)}
-                          className="h-11 pl-9 rounded-xl font-bold text-base"
+                          className="h-10 pl-9 rounded-xl font-bold text-sm sm:text-base"
                         />
                       </div>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <Label htmlFor="initPayment" className="font-bold text-xs text-slate-800 flex items-center gap-1.5">
                           <CreditCard className="size-4 text-emerald-700" />
@@ -1999,17 +1897,17 @@ export function NewPatientPageView({
                           placeholder="Ej. 200.00"
                           value={initialPayment}
                           onChange={(e) => setInitialPayment(e.target.value)}
-                          className="h-11 pl-9 rounded-xl font-bold text-base"
+                          className="h-10 pl-9 rounded-xl font-bold text-sm sm:text-base"
                         />
                       </div>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       <Label htmlFor="payMethod" className="font-bold text-xs text-slate-800">
                         FORMA DE PAGO DEL ABONO
                       </Label>
                       <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                        <SelectTrigger id="payMethod" className="h-11 rounded-xl bg-white font-semibold">
+                        <SelectTrigger id="payMethod" className="h-10 rounded-xl bg-white font-medium">
                           <SelectValue placeholder="Forma de pago" />
                         </SelectTrigger>
                         <SelectContent>
@@ -2024,13 +1922,13 @@ export function NewPatientPageView({
                   </div>
 
                   {/* Atajos de pago rápido */}
-                  <div className="flex flex-wrap items-center gap-2 pt-1">
-                    <span className="text-xs sm:text-sm font-bold text-slate-600">Atajos de pago:</span>
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    <span className="text-xs font-bold text-slate-600">Atajos de pago:</span>
                     <button
                       type="button"
                       onClick={() => setInitialPayment('0')}
                       className={cn(
-                        'text-xs sm:text-sm px-3 py-1.5 rounded-xl border font-bold transition',
+                        'text-xs px-2.5 py-1 rounded-lg border font-bold transition',
                         initialPaymentNum === 0 ? 'bg-slate-900 text-white' : 'bg-slate-50 hover:bg-slate-100 text-slate-800'
                       )}
                     >
@@ -2042,7 +1940,7 @@ export function NewPatientPageView({
                           type="button"
                           onClick={() => setInitialPayment((totalAmountNum * 0.5).toFixed(2))}
                           className={cn(
-                            'text-xs sm:text-sm px-3 py-1.5 rounded-xl border font-bold transition',
+                            'text-xs px-2.5 py-1 rounded-lg border font-bold transition',
                             initialPaymentNum === Number((totalAmountNum * 0.5).toFixed(2))
                               ? 'bg-cyan-700 text-white'
                               : 'bg-slate-50 hover:bg-slate-100 text-slate-800'
@@ -2054,29 +1952,29 @@ export function NewPatientPageView({
                           type="button"
                           onClick={() => setInitialPayment(totalAmountNum.toFixed(2))}
                           className={cn(
-                            'text-xs sm:text-sm px-3 py-1.5 rounded-xl border font-bold transition',
+                            'text-xs px-2.5 py-1 rounded-lg border font-bold transition',
                             initialPaymentNum === totalAmountNum
                               ? 'bg-emerald-700 text-white'
                               : 'bg-slate-50 hover:bg-slate-100 text-slate-800'
                           )}
                         >
-                          Pago completo 100% (S/ {totalAmountNum.toFixed(2)})
+                          Pago 100% (S/ {totalAmountNum.toFixed(2)})
                         </button>
                       </>
                     )}
                   </div>
 
                   {/* Resumen financiero */}
-                  <div className="grid gap-3 sm:grid-cols-3 pt-2">
+                  <div className="grid gap-2.5 sm:grid-cols-3 pt-1">
                     <div className="rounded-xl bg-slate-50 p-3 border">
-                      <span className="text-xs text-muted-foreground block">Monto Total del Plan</span>
-                      <strong className="text-lg font-black text-slate-900">
+                      <span className="text-[11px] text-muted-foreground block font-semibold">Monto Total del Plan</span>
+                      <strong className="text-base sm:text-lg font-black text-slate-900">
                         S/ {totalAmountNum.toFixed(2)}
                       </strong>
                     </div>
                     <div className="rounded-xl bg-emerald-50 p-3 border border-emerald-200">
-                      <span className="text-xs text-emerald-800 font-semibold block">Abono Inicial en Caja</span>
-                      <strong className="text-lg font-black text-emerald-900">
+                      <span className="text-[11px] text-emerald-800 font-semibold block">Abono Inicial en Caja</span>
+                      <strong className="text-base sm:text-lg font-black text-emerald-900">
                         S/ {initialPaymentNum.toFixed(2)}
                       </strong>
                       <span className="text-[11px] text-emerald-700 block mt-0.5">
@@ -2089,8 +1987,8 @@ export function NewPatientPageView({
                         ? 'bg-emerald-100/70 border-emerald-300 text-emerald-950'
                         : 'bg-amber-50 border-amber-200 text-amber-950'
                     )}>
-                      <span className="text-xs font-semibold block opacity-80">Saldo Pendiente por Cobrar</span>
-                      <strong className="text-lg font-black block">
+                      <span className="text-[11px] font-semibold block opacity-80">Saldo Pendiente por Cobrar</span>
+                      <strong className="text-base sm:text-lg font-black block">
                         S/ {pendingBalanceNum.toFixed(2)}
                       </strong>
                       <span className="text-[11px] opacity-80 block mt-0.5">
@@ -2103,7 +2001,7 @@ export function NewPatientPageView({
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <Label htmlFor="payNotes" className="text-xs font-medium text-muted-foreground">
                       Nro. de Operación / Observaciones de Pago (opcional)
                     </Label>
@@ -2119,17 +2017,17 @@ export function NewPatientPageView({
               </div>
 
               {error && (
-                <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm font-medium text-red-800">
+                <div className="rounded-xl bg-red-50 border border-red-200 p-3.5 text-sm font-medium text-red-800">
                   {error}
                 </div>
               )}
 
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => changeStep(2)}
-                  className="h-12 w-full sm:w-auto px-6 rounded-xl font-bold border-slate-300 hover:bg-slate-100"
+                  className="h-11 w-full sm:w-auto px-5 rounded-xl font-bold border-slate-300 hover:bg-slate-100 text-sm"
                 >
                   <ArrowLeft className="mr-2 size-4" /> Anterior: Página 2
                 </Button>
@@ -2137,7 +2035,7 @@ export function NewPatientPageView({
                 <Button
                   type="submit"
                   disabled={saving}
-                  className="h-14 w-full sm:w-auto px-8 rounded-2xl text-base font-black bg-cyan-700 hover:bg-cyan-800 text-white shadow-xl shadow-cyan-700/25"
+                  className="h-11 sm:h-12 w-full sm:w-auto px-7 rounded-xl text-sm sm:text-base font-black bg-cyan-700 hover:bg-cyan-800 text-white shadow-lg shadow-cyan-700/20"
                 >
                   {saving ? (
                     <>
