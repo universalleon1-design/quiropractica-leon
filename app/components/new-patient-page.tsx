@@ -141,8 +141,9 @@ export function NewPatientPageView({
   const [cervicalListingLevel, setCervicalListingLevel] = useState('C2');
   const [cervicalSeries, setCervicalSeries] = useState('Serie 1 al 7');
   const [clinicalNotes, setClinicalNotes] = useState('');
-  const [totalSessions, setTotalSessions] = useState('8');
+  const [totalSessions, setTotalSessions] = useState('10');
   const [sessionsPerWeek, setSessionsPerWeek] = useState('2');
+  const [startToday, setStartToday] = useState<'SI' | 'NO'>('SI');
   const [appointmentDate, setAppointmentDate] = useState(today);
   const [appointmentTime, setAppointmentTime] = useState('09:00');
   const [totalAmount, setTotalAmount] = useState('800');
@@ -277,9 +278,10 @@ export function NewPatientPageView({
       cervicalListingLevel: cervicalListingLevel.trim(),
       cervicalSeries: cervicalSeries.trim(),
       clinicalNotes: clinicalNotes.trim(),
-      totalSessions: Number(totalSessions) || 8,
+      totalSessions: Number(totalSessions) || 10,
       sessionsPerWeek: Number(sessionsPerWeek) || 2,
-      appointmentDate,
+      startToday: startToday === 'SI',
+      appointmentDate: startToday === 'SI' ? today : appointmentDate,
       appointmentTime,
       totalAmount: totalAmountNum,
       initialPayment: initialPaymentNum,
@@ -300,6 +302,8 @@ export function NewPatientPageView({
         firstName?: string;
         lastName?: string;
         qrValue?: string;
+        used?: number;
+        total?: number;
       };
 
       setSaving(false);
@@ -313,8 +317,8 @@ export function NewPatientPageView({
         id: body.patientId,
         name: `${body.firstName} ${body.lastName}`,
         phone: phone.trim() || null,
-        used: 0,
-        total: Number(totalSessions) || 8,
+        used: body.used ?? (startToday === 'SI' ? 1 : 0),
+        total: body.total ?? (Number(totalSessions) || 10),
         qrValue: body.qrValue || null,
       };
 
@@ -364,6 +368,8 @@ export function NewPatientPageView({
     setGaitTiptoes('Normal');
     setGaitHeels('Normal');
     setClinicalNotes('');
+    setStartToday('SI');
+    setTotalSessions('10');
   }
 
   if (result) {
@@ -410,8 +416,14 @@ export function NewPatientPageView({
                 <strong className="text-slate-900 font-bold">{phone || 'No registrado'}</strong>
               </div>
               <div>
-                <span className="text-slate-500 font-medium block">Plan Contratado</span>
-                <strong className="text-slate-900 font-bold">{totalSessions || 8} sesiones ({sessionsPerWeek}/sem)</strong>
+                <span className="text-slate-500 font-medium block">Plan y Sesiones</span>
+                <strong className="text-slate-900 font-bold">{totalSessions || 10} sesiones ({sessionsPerWeek}x sem)</strong>
+                <span className={cn(
+                  'text-[11px] font-black block mt-0.5',
+                  startToday === 'SI' ? 'text-emerald-700' : 'text-slate-600'
+                )}>
+                  {startToday === 'SI' ? `✓ 1ra sesión iniciada hoy (1 de ${totalSessions || 10})` : 'Inicio agendado'}
+                </span>
               </div>
               <div className="sm:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-cyan-100/60">
                 <div className="rounded-lg bg-white p-2 border">
@@ -1755,7 +1767,7 @@ export function NewPatientPageView({
                   </div>
                 </div>
 
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   <div className="space-y-1.5">
                     <Label htmlFor="totSessions" className="font-bold text-xs uppercase tracking-wider text-slate-700">
                       PLAN DE SESIONES
@@ -1782,7 +1794,7 @@ export function NewPatientPageView({
                       type="number"
                       min="1"
                       max="99"
-                      placeholder="Otro número"
+                      placeholder="Otro número (ej. 10, 12...)"
                       value={totalSessions}
                       onChange={(e) => setTotalSessions(e.target.value)}
                       className="h-10 rounded-xl bg-white font-medium"
@@ -1794,7 +1806,7 @@ export function NewPatientPageView({
                       FRECUENCIA SEMANAL
                     </Label>
                     <div className="flex gap-1.5">
-                      {['1', '2', '3'].map((freq) => (
+                      {['1', '2', '3', '4'].map((freq) => (
                         <button
                           key={freq}
                           type="button"
@@ -1815,39 +1827,107 @@ export function NewPatientPageView({
                       type="number"
                       min="1"
                       max="7"
-                      placeholder="Otra frec."
+                      placeholder="Otra frec. semanal"
                       value={sessionsPerWeek}
                       onChange={(e) => setSessionsPerWeek(e.target.value)}
                       className="h-10 rounded-xl bg-white font-medium"
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="appDate" className="font-bold text-xs uppercase tracking-wider text-slate-700">
-                      FECHA PRIMERA CITA
+                  <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
+                    <Label className="font-bold text-xs uppercase tracking-wider text-slate-700">
+                      ¿INICIA HOY SU PRIMERA SESIÓN?
                     </Label>
-                    <Input
-                      id="appDate"
-                      type="date"
-                      value={appointmentDate}
-                      onChange={(e) => setAppointmentDate(e.target.value)}
-                      className="h-10 rounded-xl bg-white font-medium"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="appTime" className="font-bold text-xs uppercase tracking-wider text-slate-700">
-                      HORA DE LA CITA
-                    </Label>
-                    <Input
-                      id="appTime"
-                      type="time"
-                      value={appointmentTime}
-                      onChange={(e) => setAppointmentTime(e.target.value)}
-                      className="h-10 rounded-xl bg-white font-medium"
-                    />
+                    <div className="flex gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setStartToday('SI')}
+                        className={cn(
+                          'h-9 flex-1 rounded-lg text-xs sm:text-sm font-black border transition',
+                          startToday === 'SI'
+                            ? 'bg-emerald-700 text-white border-emerald-700 shadow-xs'
+                            : 'bg-white hover:bg-slate-50 text-slate-800'
+                        )}
+                      >
+                        SÍ - Comienza Hoy
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setStartToday('NO')}
+                        className={cn(
+                          'h-9 flex-1 rounded-lg text-xs sm:text-sm font-black border transition',
+                          startToday === 'NO'
+                            ? 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                            : 'bg-white hover:bg-slate-50 text-slate-800'
+                        )}
+                      >
+                        NO - Agendar Cita
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground font-medium">
+                      {startToday === 'SI'
+                        ? '✅ Contabilizará 1 sesión cumplida hoy al registrar.'
+                        : 'El paciente agendará una fecha para su 1ra sesión.'}
+                    </p>
                   </div>
                 </div>
+
+                {startToday === 'SI' ? (
+                  <div className="rounded-xl border border-emerald-300 bg-emerald-100/40 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <span className="grid size-8 place-items-center rounded-xl bg-emerald-700 text-white text-xs font-black shadow-xs">
+                        1
+                      </span>
+                      <div>
+                        <p className="text-xs sm:text-sm font-black text-emerald-950">
+                          Primera sesión realizada hoy ({today})
+                        </p>
+                        <p className="text-[11px] text-emerald-800 font-medium">
+                          Quedará registrada como Sesión 1 de {totalSessions || 10} cumplida en el expediente.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Label htmlFor="appTime" className="text-xs font-bold text-slate-700 whitespace-nowrap">
+                        Hora de atención hoy:
+                      </Label>
+                      <Input
+                        id="appTime"
+                        type="time"
+                        value={appointmentTime}
+                        onChange={(e) => setAppointmentTime(e.target.value)}
+                        className="h-9 w-28 rounded-lg bg-white font-medium text-xs"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2 rounded-xl border border-slate-200 bg-white p-3.5">
+                    <div className="space-y-1">
+                      <Label htmlFor="appDate" className="font-bold text-xs text-slate-700">
+                        FECHA PRIMERA CITA
+                      </Label>
+                      <Input
+                        id="appDate"
+                        type="date"
+                        value={appointmentDate}
+                        onChange={(e) => setAppointmentDate(e.target.value)}
+                        className="h-9 rounded-lg bg-white font-medium"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="appTime" className="font-bold text-xs text-slate-700">
+                        HORA DE LA CITA
+                      </Label>
+                      <Input
+                        id="appTime"
+                        type="time"
+                        value={appointmentTime}
+                        onChange={(e) => setAppointmentTime(e.target.value)}
+                        className="h-9 rounded-lg bg-white font-medium"
+                      />
+                    </div>
+                  </div>
+                )}
 
                 {/* Bloque Financiero y Pagos */}
                 <div className="rounded-xl bg-white p-3.5 border border-emerald-200 space-y-3 shadow-xs">

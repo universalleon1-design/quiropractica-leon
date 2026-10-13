@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   await ensureDbInitialized();
 
   try {
-    const [assessment, plan, payments, supplementRows, anamnesis, patientInfo] = await Promise.all([
+    const [assessment, plan, payments, supplementRows, anamnesis, patientInfo, visitRows] = await Promise.all([
       env.DB.prepare(
         `SELECT reason, conditions, body_analysis AS bodyAnalysis, weight_kg AS weightKg,
                 height_cm AS heightCm, bmi, healthy_weight_min_kg AS healthyWeightMinKg,
@@ -47,6 +47,15 @@ export async function GET(request: Request) {
         `SELECT id, first_name || ' ' || last_name AS name, dni, address, occupation, birth_date AS birthDate, sex, phone
          FROM patients WHERE id = ? LIMIT 1`,
       ).bind(patientId).first(),
+      env.DB.prepare(
+        `SELECT a.id, a.appointment_date AS appointmentDate, a.start_time AS startTime,
+                a.status, a.reason, a.created_at AS createdAt,
+                ci.checked_in_at AS checkedInAt
+         FROM appointments a
+         LEFT JOIN check_ins ci ON ci.appointment_id = a.id
+         WHERE a.patient_id = ?
+         ORDER BY a.appointment_date DESC, a.start_time DESC`,
+      ).bind(patientId).all(),
     ]);
     return NextResponse.json({
       assessment,
@@ -55,6 +64,7 @@ export async function GET(request: Request) {
       supplements: supplementRows.results,
       anamnesis,
       patientInfo,
+      visits: visitRows.results,
     });
   } catch (error) {
     console.error('patient.record.read.failed', error);
@@ -69,6 +79,7 @@ export async function POST(request: Request) {
     patientId?: string; reason?: string; conditions?: string; bodyAnalysis?: string;
     weightKg?: string | number; heightCm?: string | number; targetWeightKg?: string | number;
     dietPlan?: string; notes?: string; totalSessions?: string | number;
+    usedSessions?: string | number;
     sessionsPerWeek?: string | number; startDate?: string; totalAmount?: string | number;
     paymentAmount?: string | number; paymentMethod?: string;
   };
@@ -86,11 +97,24 @@ export async function POST(request: Request) {
   const targetWeightKg = numberOrNull(body.targetWeightKg);
   const now = new Date().toISOString();
   const totalSessions = Math.max(1, Math.min(99, Number(body.totalSessions) || 1));
+  const usedSessions = body.usedSessions !== undefined && body.usedSessions !== null && body.usedSessions !== ''
+    ? Math.max(0, Math.min(totalSessions, Number(body.usedSessions) || 0))
+    : null;
   const sessionsPerWeek = Math.max(1, Math.min(7, Number(body.sessionsPerWeek) || 1));
   const totalAmountCents = Math.max(0, Math.round((Number(body.totalAmount) || 0) * 100));
   const paymentCents = Math.max(0, Math.round((Number(body.paymentAmount) || 0) * 100));
 
   try {
+    const sessionUpdateStatement = usedSessions !== null
+      ? env.DB.prepare(
+          `UPDATE session_packages SET total_sessions = ?, used_sessions = ?, sessions_per_week = ?, start_date = ?,
+           total_amount_cents = ? WHERE patient_id = ?`,
+        ).bind(totalSessions, usedSessions, sessionsPerWeek, body.startDate || todayInLima(), totalAmountCents, patientId)
+      : env.DB.prepare(
+          `UPDATE session_packages SET total_sessions = ?, sessions_per_week = ?, start_date = ?,
+           total_amount_cents = ? WHERE patient_id = ?`,
+        ).bind(totalSessions, sessionsPerWeek, body.startDate || todayInLima(), totalAmountCents, patientId);
+
     const statements = [
       env.DB.prepare(
         `INSERT INTO patient_assessments
@@ -103,10 +127,7 @@ export async function POST(request: Request) {
         weightKg, heightCm, bmi, healthyWeightMinKg, healthyWeightMaxKg, targetWeightKg,
         body.dietPlan?.trim() || null, body.notes?.trim() || null, now,
       ),
-      env.DB.prepare(
-        `UPDATE session_packages SET total_sessions = ?, sessions_per_week = ?, start_date = ?,
-         total_amount_cents = ? WHERE patient_id = ?`,
-      ).bind(totalSessions, sessionsPerWeek, body.startDate || todayInLima(), totalAmountCents, patientId),
+      sessionUpdateStatement,
       env.DB.prepare(
         `INSERT INTO audit_logs (id, actor_id, action, entity_type, entity_id, created_at)
          VALUES (?, ?, 'patient.assessed', 'patient', ?, ?)`,

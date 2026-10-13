@@ -10,6 +10,7 @@ import {
   makeId,
   normalizeSearch,
   todayInLima,
+  timeInLima,
 } from '@/lib/clinic';
 
 export async function POST(request: Request) {
@@ -70,6 +71,7 @@ export async function POST(request: Request) {
     initialPayment?: number;
     paymentMethod?: string;
     paymentNotes?: string;
+    startToday?: boolean | string;
   };
 
   const firstName = body.firstName?.trim();
@@ -82,8 +84,11 @@ export async function POST(request: Request) {
   const pin = generatePin();
   const qrToken = generatePatientQrToken();
   const now = new Date().toISOString();
-  const appointmentDate = body.appointmentDate || todayInLima();
+  const today = todayInLima();
+  const startsToday = body.startToday === true || body.startToday === 'SI';
+  const appointmentDate = startsToday ? today : (body.appointmentDate || today);
   const totalSessions = Math.max(1, Math.min(99, Number(body.totalSessions) || 1));
+  const usedSessions = startsToday ? 1 : 0;
   const weight = Number(body.weightKg) || null;
   const height = Number(body.heightCm) || null;
   const bmi = weight && height ? Number((weight / ((height / 100) ** 2)).toFixed(1)) : null;
@@ -167,11 +172,12 @@ export async function POST(request: Request) {
       env.DB.prepare(
         `INSERT INTO session_packages
          (id, patient_id, total_sessions, used_sessions, sessions_per_week, start_date, total_amount_cents, created_at)
-         VALUES (?, ?, ?, 0, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       ).bind(
         makeId('package'),
         patientId,
         totalSessions,
+        usedSessions,
         Math.max(1, Math.min(7, Number(body.sessionsPerWeek) || 1)),
         appointmentDate,
         Math.round((Number(body.totalAmount) || 0) * 100),
@@ -225,13 +231,33 @@ export async function POST(request: Request) {
       );
     }
 
-    if (body.appointmentTime) {
+    const apptTime = body.appointmentTime || timeInLima();
+    const apptId = makeId('appointment');
+    if (startsToday) {
+      statements.push(
+        env.DB.prepare(
+          `INSERT INTO appointments
+           (id, patient_id, appointment_date, start_time, duration_minutes, status, reason, created_at)
+           VALUES (?, ?, ?, ?, 45, 'completed', '1ra sesión de ajuste realizada al registrarse', ?)`,
+        ).bind(apptId, patientId, appointmentDate, apptTime, now),
+        env.DB.prepare(
+          `INSERT INTO check_ins
+           (id, appointment_id, patient_id, location_code, checked_in_at)
+           VALUES (?, ?, ?, 'registration_day', ?)`,
+        ).bind(makeId('checkin'), apptId, patientId, now),
+        env.DB.prepare(
+          `INSERT INTO clinical_visits
+           (id, appointment_id, patient_id, notes, completed_at, created_at)
+           VALUES (?, ?, ?, 'Primera sesión de ajuste quiropráctico realizada', ?, ?)`,
+        ).bind(makeId('visit'), apptId, patientId, now, now),
+      );
+    } else if (body.appointmentTime) {
       statements.push(
         env.DB.prepare(
           `INSERT INTO appointments
            (id, patient_id, appointment_date, start_time, duration_minutes, status, reason, created_at)
            VALUES (?, ?, ?, ?, 45, 'scheduled', NULL, ?)`,
-        ).bind(makeId('appointment'), patientId, appointmentDate, body.appointmentTime, now),
+        ).bind(apptId, patientId, appointmentDate, body.appointmentTime, now),
       );
     }
 
@@ -241,6 +267,9 @@ export async function POST(request: Request) {
       firstName,
       lastName,
       qrValue: makePatientQrValue(qrToken),
+      used: usedSessions,
+      total: totalSessions,
+      startsToday,
     });
   } catch (error) {
     console.error('patient.create.failed', error);

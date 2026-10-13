@@ -19,11 +19,13 @@ import {
   Leaf,
   LoaderCircle,
   LogOut,
+  Minus,
   MoreHorizontal,
   Plus,
   QrCode,
   Search,
   Scale,
+  Settings2,
   Sparkles,
   Trash2,
   UserPlus,
@@ -1155,13 +1157,25 @@ function TodayView({
                       <TableCell><Badge className={`rounded-full border-0 text-xs sm:text-sm font-black px-3.5 py-1 ${status.className}`}>{status.label}</Badge></TableCell>
                       <TableCell className="text-right">
                         {item.status === 'checked_in' && (
-                          <Button size="sm" variant="outline" className="h-10 rounded-xl px-4 text-sm font-bold" onClick={() => void onStatusChange(item.id, 'in_session')}>Atender</Button>
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Button size="sm" variant="outline" className="h-9 rounded-xl px-3 text-xs sm:text-sm font-bold" onClick={() => void onStatusChange(item.id, 'in_session')}>Atender</Button>
+                            <Button size="sm" className="h-9 rounded-xl px-3 text-xs sm:text-sm font-black bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs" onClick={() => void onStatusChange(item.id, 'completed')}>Completar (+1)</Button>
+                          </div>
                         )}
                         {item.status === 'in_session' && (
-                          <Button size="sm" className="h-10 rounded-xl px-4 text-sm font-bold bg-emerald-700 hover:bg-emerald-800 text-white" onClick={() => void onStatusChange(item.id, 'completed')}>Completar</Button>
+                          <Button size="sm" className="h-9 rounded-xl px-4 text-xs sm:text-sm font-black bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs" onClick={() => void onStatusChange(item.id, 'completed')}>Completar (+1)</Button>
                         )}
-                        {item.status === 'scheduled' && <span className="text-sm font-semibold text-slate-500">En espera</span>}
-                        {item.status === 'completed' && <Check className="ml-auto size-6 text-emerald-700" />}
+                        {item.status === 'scheduled' && (
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Button size="sm" variant="outline" className="h-9 rounded-xl px-3 text-xs sm:text-sm font-bold" onClick={() => void onStatusChange(item.id, 'in_session')}>Llegó / Atender</Button>
+                            <Button size="sm" className="h-9 rounded-xl px-3 text-xs sm:text-sm font-black bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs" onClick={() => void onStatusChange(item.id, 'completed')}>Completar (+1)</Button>
+                          </div>
+                        )}
+                        {item.status === 'completed' && (
+                          <span className="inline-flex items-center text-xs sm:text-sm font-black text-emerald-700">
+                            <Check className="mr-1 size-4.5 stroke-[3]" /> Completada
+                          </span>
+                        )}
                       </TableCell>
                     </TableRow>
                   );
@@ -1349,12 +1363,33 @@ function PatientsView({
                 <Progress value={patient.total ? (patient.used / patient.total) * 100 : 0} className="mt-2.5 h-2.5" />
               </div>
 
-              <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between text-sm">
-                <span className="text-slate-500 font-semibold">Expediente Clínico</span>
+              <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between gap-2 text-sm">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    const res = await fetch('/api/admin/appointments', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ patientId: patient.id, action: 'register_session' }),
+                    });
+                    const body = (await res.json()) as { ok?: boolean; used?: number; total?: number };
+                    if (res.ok && body.used !== undefined) {
+                      patient.used = body.used;
+                      if (body.total !== undefined) patient.total = body.total;
+                      onDeleted(); // triggers refresh()
+                    }
+                  }}
+                  className="h-8.5 rounded-xl text-xs font-black bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300 shadow-2xs"
+                  title="Registrar una sesión asistida hoy para este paciente"
+                >
+                  <Plus className="size-3 mr-1" /> +1 Asistencia Hoy
+                </Button>
                 <button
                   type="button"
                   onClick={() => onPatient(patient)}
-                  className="font-black text-cyan-800 hover:text-cyan-950 flex items-center gap-1 text-sm sm:text-base transition"
+                  className="font-black text-cyan-800 hover:text-cyan-950 flex items-center gap-1 text-xs sm:text-sm transition"
                 >
                   Ver resumen <ChevronRight className="size-4" />
                 </button>
@@ -1561,6 +1596,7 @@ type PatientRecord = {
   plan: null | { totalSessions: number; usedSessions: number; sessionsPerWeek: number; startDate?: string; totalAmountCents: number };
   payments: { id: string; amountCents: number; method?: string; paidAt: string }[];
   supplements: { id: string; name: string; instructions?: string; quantity?: string }[];
+  visits?: { id: string; appointmentDate: string; startTime: string; status: string; reason?: string | null; createdAt: string; checkedInAt?: string | null }[];
 };
 
 function renderSpinePainBadges(val?: string | null) {
@@ -1624,6 +1660,10 @@ function PatientRecordPage({ patient, onBack, onDeleted, onSaved }: { patient: P
   const [deleting, setDeleting] = useState(false);
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
+  const [updatingSessions, setUpdatingSessions] = useState(false);
+  const [showSessionConfig, setShowSessionConfig] = useState(false);
+  const [cfgTotal, setCfgTotal] = useState('');
+  const [cfgUsed, setCfgUsed] = useState('');
 
   const loadRecord = useCallback(async () => {
     if (!patient) return;
@@ -1640,6 +1680,66 @@ function PatientRecordPage({ patient, onBack, onDeleted, onSaved }: { patient: P
 
   // oxlint-disable-next-line react-compiler/react-compiler -- load the selected patient's server record when the dialog opens
   useEffect(() => { void loadRecord(); }, [loadRecord]);
+
+  async function handleQuickSession(action: 'register_session' | 'decrement_session') {
+    if (!patient || updatingSessions) return;
+    setUpdatingSessions(true);
+    try {
+      const res = await fetch('/api/admin/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patientId: patient.id, action }),
+      });
+      const body = (await res.json()) as { ok?: boolean; used?: number; total?: number; error?: string };
+      if (res.ok && body.used !== undefined) {
+        patient.used = body.used;
+        if (body.total !== undefined) patient.total = body.total;
+        setMessage(action === 'register_session'
+          ? `¡Sesión registrada con éxito! Lleva ${body.used} de ${body.total} sesiones.`
+          : `Sesión corregida. Lleva ${body.used} de ${body.total} sesiones.`);
+        await loadRecord();
+        onSaved();
+      } else {
+        setMessage(body.error || 'No se pudo actualizar las sesiones.');
+      }
+    } catch {
+      setMessage('Error de conexión al actualizar las sesiones.');
+    } finally {
+      setUpdatingSessions(false);
+    }
+  }
+
+  async function handleSaveSessionConfig() {
+    if (!patient || updatingSessions) return;
+    setUpdatingSessions(true);
+    try {
+      const res = await fetch('/api/admin/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patientId: patient.id,
+          action: 'adjust_sessions',
+          totalSessions: Number(cfgTotal) || patient.total,
+          usedSessions: Number(cfgUsed) || patient.used,
+        }),
+      });
+      const body = (await res.json()) as { ok?: boolean; used?: number; total?: number; error?: string };
+      if (res.ok && body.used !== undefined && body.total !== undefined) {
+        patient.used = body.used;
+        patient.total = body.total;
+        setMessage(`Plan reconfigurado: ${body.used} de ${body.total} sesiones cumplidas.`);
+        setShowSessionConfig(false);
+        await loadRecord();
+        onSaved();
+      } else {
+        setMessage(body.error || 'No se pudo reconfigurar el plan.');
+      }
+    } catch {
+      setMessage('Error al reconfigurar las sesiones.');
+    } finally {
+      setUpdatingSessions(false);
+    }
+  }
 
   const liveBmi = Number(weight) > 0 && Number(height) > 0
     ? Number(weight) / ((Number(height) / 100) ** 2)
@@ -1721,19 +1821,137 @@ function PatientRecordPage({ patient, onBack, onDeleted, onSaved }: { patient: P
       </div>
       <div className="space-y-5 rounded-3xl bg-white p-5 shadow-sm sm:p-7">
             <div className="grid gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl bg-muted/80 p-5 border">
-                <p className="text-sm font-bold uppercase tracking-wider text-slate-700">Sesiones</p>
-                <p className="mt-2 text-3xl font-black text-slate-950">{patient.used} / {patient.total}</p>
+              <div className="rounded-2xl bg-slate-900 text-white p-5 border shadow-sm flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-300">Control de Sesiones</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setCfgTotal((record?.plan?.totalSessions ?? patient.total).toString());
+                      setCfgUsed((record?.plan?.usedSessions ?? patient.used).toString());
+                      setShowSessionConfig((prev) => !prev);
+                    }}
+                    className="h-7 text-xs font-bold text-cyan-300 hover:text-white hover:bg-white/10 px-2 rounded-lg"
+                  >
+                    <Settings2 className="size-3.5 mr-1" /> Reconfigurar
+                  </Button>
+                </div>
+                <p className="mt-2 text-3xl font-black text-white">
+                  {patient.used} <span className="text-lg font-normal text-slate-400">/ {patient.total}</span>
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    disabled={updatingSessions}
+                    onClick={() => void handleQuickSession('register_session')}
+                    className="h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-xs"
+                  >
+                    <Plus className="size-3.5 mr-1" /> +1 Sesión Hoy
+                  </Button>
+                  {patient.used > 0 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={updatingSessions}
+                      onClick={() => void handleQuickSession('decrement_session')}
+                      className="h-8 rounded-lg border-white/20 bg-white/10 text-white hover:bg-white/20 text-xs font-bold"
+                      title="Disminuir 1 si hubo un error"
+                    >
+                      <Minus className="size-3.5 mr-1" /> -1 Corregir
+                    </Button>
+                  )}
+                </div>
               </div>
-              <div className="rounded-2xl bg-cyan-50 p-5 border border-cyan-100">
-                <p className="text-sm font-bold uppercase tracking-wider text-cyan-900">Teléfono</p>
-                <p className="mt-2 text-xl font-black text-cyan-950">{patient.phone || 'Sin registrar'}</p>
+              <div className="rounded-2xl bg-cyan-50 p-5 border border-cyan-100 flex flex-col justify-between">
+                <div>
+                  <p className="text-sm font-bold uppercase tracking-wider text-cyan-900">Teléfono</p>
+                  <p className="mt-2 text-xl font-black text-cyan-950">{patient.phone || 'Sin registrar'}</p>
+                </div>
+                <div className="mt-2">
+                  <span className="text-xs text-cyan-800 font-bold">
+                    {Math.max(0, patient.total - patient.used)} sesiones restantes
+                  </span>
+                </div>
               </div>
-              <div className="rounded-2xl bg-emerald-50 p-5 border border-emerald-100">
-                <p className="text-sm font-bold uppercase tracking-wider text-emerald-900">Estado</p>
-                <p className="mt-2 text-xl font-black text-emerald-950">Plan activo</p>
+              <div className="rounded-2xl bg-emerald-50 p-5 border border-emerald-100 flex flex-col justify-between">
+                <div>
+                  <p className="text-sm font-bold uppercase tracking-wider text-emerald-900">Estado del Plan</p>
+                  <p className="mt-2 text-xl font-black text-emerald-950">
+                    {patient.used >= patient.total ? '🎉 Plan Completado' : '⚡ Plan Activo'}
+                  </p>
+                </div>
+                <div className="mt-2">
+                  <span className="text-xs text-emerald-800 font-bold">
+                    {record?.plan?.sessionsPerWeek ? `${record.plan.sessionsPerWeek} sesiones por semana` : 'Frecuencia flexible'}
+                  </span>
+                </div>
               </div>
             </div>
+
+            {showSessionConfig && (
+              <div className="rounded-2xl border-2 border-cyan-500 bg-cyan-50/60 p-4 sm:p-5 space-y-3.5 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-black text-sm sm:text-base text-cyan-950 flex items-center gap-2">
+                    <Settings2 className="size-4.5 text-cyan-700" /> Reconfigurar Sesiones del Paciente
+                  </h4>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowSessionConfig(false)}
+                    className="size-7 p-0 text-slate-500 hover:text-slate-900 rounded-lg"
+                  >
+                    ✕
+                  </Button>
+                </div>
+                <p className="text-xs text-slate-600">
+                  Modifica el total del paquete (ej. 10, 12) o las sesiones ya cumplidas. Útil cuando el paciente asiste sin cita previa o cumple varias sesiones en una misma semana.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs font-bold text-slate-700">Total de sesiones del paquete</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="99"
+                      value={cfgTotal}
+                      onChange={(e) => setCfgTotal(e.target.value)}
+                      className="h-10 bg-white rounded-xl font-bold"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs font-bold text-slate-700">Sesiones cumplidas / asistidas</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="99"
+                      value={cfgUsed}
+                      onChange={(e) => setCfgUsed(e.target.value)}
+                      className="h-10 bg-white rounded-xl font-bold text-emerald-700"
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowSessionConfig(false)}
+                    className="h-9 rounded-xl text-xs font-bold"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    size="sm"
+                    disabled={updatingSessions}
+                    onClick={() => void handleSaveSessionConfig()}
+                    className="h-9 rounded-xl bg-cyan-700 hover:bg-cyan-800 text-white text-xs font-black"
+                  >
+                    {updatingSessions ? <LoaderCircle className="size-3.5 animate-spin mr-1" /> : <CheckCircle2 className="size-3.5 mr-1" />}
+                    Guardar Configuración
+                  </Button>
+                </div>
+              </div>
+            )}
             {record?.patientInfo && (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 rounded-2xl border bg-slate-50/70 p-5">
                 <div>
@@ -1933,6 +2151,66 @@ function PatientRecordPage({ patient, onBack, onDeleted, onSaved }: { patient: P
                 </div>
               </div>
             )}
+            {/* Historial de Asistencias y Sesiones Realizadas */}
+            <div className="rounded-3xl border bg-slate-50/50 p-5 space-y-3.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="grid size-9 place-items-center rounded-xl bg-cyan-700 text-white shadow-xs">
+                    <CalendarDays className="size-4.5" />
+                  </span>
+                  <div>
+                    <h3 className="font-extrabold text-base text-slate-900">Historial de Asistencias y Sesiones Realizadas</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Control detallado de cada día que el paciente asistió a la clínica ({record?.visits?.length ?? 0} registros).
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  disabled={updatingSessions}
+                  onClick={() => void handleQuickSession('register_session')}
+                  className="h-9 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-xs self-start sm:self-auto"
+                >
+                  <Plus className="size-3.5 mr-1" /> +1 Registrar Sesión Hoy
+                </Button>
+              </div>
+
+              {record?.visits && record.visits.length > 0 ? (
+                <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                  {record.visits.map((v, idx) => (
+                    <div key={v.id || idx} className="rounded-xl border border-slate-200/80 bg-white p-3 space-y-1 shadow-2xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-black text-cyan-950">
+                          Visita #{record.visits!.length - idx}
+                        </span>
+                        <span className={cn(
+                          'text-[10px] font-black px-2 py-0.5 rounded-full uppercase',
+                          v.status === 'completed'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : v.status === 'checked_in'
+                            ? 'bg-cyan-100 text-cyan-800'
+                            : 'bg-slate-100 text-slate-700'
+                        )}>
+                          {v.status === 'completed' ? 'Completada' : v.status === 'checked_in' ? 'Checked in' : v.status}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-700 font-semibold flex items-center gap-2 pt-0.5">
+                        <span>📅 {v.appointmentDate}</span>
+                        <span>⏰ {v.startTime}</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 truncate">
+                        {v.reason || 'Sesión presencial asistida'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-slate-300 p-5 text-center text-xs text-muted-foreground bg-white">
+                  Aún no hay asistencias registradas para este paciente. Presiona <strong>"+1 Registrar Sesión Hoy"</strong> o escanea el QR cuando acuda a la clínica.
+                </div>
+              )}
+            </div>
+
             <div>
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">Progreso del plan</span><strong>{Math.max(0, patient.total - patient.used)} restantes</strong></div>
               <Progress value={patient.total ? (patient.used / patient.total) * 100 : 0} className="mt-2" />
@@ -1961,8 +2239,9 @@ function PatientRecordPage({ patient, onBack, onDeleted, onSaved }: { patient: P
                   <div className="space-y-2"><Label htmlFor="bodyAnalysis">Análisis corporal</Label><Textarea id="bodyAnalysis" name="bodyAnalysis" defaultValue={record?.assessment?.bodyAnalysis} placeholder="Postura, movilidad, zonas observadas…" className="min-h-24 rounded-xl" /></div>
                   <div className="space-y-2"><Label htmlFor="dietPlan">Dieta o recomendaciones</Label><Textarea id="dietPlan" name="dietPlan" defaultValue={record?.assessment?.dietPlan} placeholder="Indicaciones acordadas y seguimiento…" className="min-h-24 rounded-xl" /></div>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                   <div className="space-y-2"><Label htmlFor="totalSessions">Sesiones del plan</Label><Input id="totalSessions" name="totalSessions" type="number" min="1" max="99" defaultValue={record?.plan?.totalSessions ?? patient.total} className="h-11 rounded-xl" /></div>
+                  <div className="space-y-2"><Label htmlFor="usedSessions">Sesiones cumplidas</Label><Input id="usedSessions" name="usedSessions" type="number" min="0" max="99" defaultValue={record?.plan?.usedSessions ?? patient.used} className="h-11 rounded-xl font-bold text-emerald-700" /></div>
                   <div className="space-y-2"><Label htmlFor="sessionsPerWeek">Veces por semana</Label><Input id="sessionsPerWeek" name="sessionsPerWeek" type="number" min="1" max="7" defaultValue={record?.plan?.sessionsPerWeek ?? 3} className="h-11 rounded-xl" /></div>
                   <div className="space-y-2"><Label htmlFor="startDate">Inicio del plan</Label><Input id="startDate" name="startDate" type="date" defaultValue={record?.plan?.startDate ?? new Date().toISOString().slice(0, 10)} className="h-11 rounded-xl" /></div>
                   <div className="space-y-2"><Label htmlFor="totalAmount">Monto total (S/)</Label><Input id="totalAmount" name="totalAmount" type="number" min="0" step="0.01" defaultValue={totalCents ? (totalCents / 100).toFixed(2) : ''} className="h-11 rounded-xl" /></div>
