@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import QrScanner from 'qr-scanner';
 import {
   Activity,
   ArrowLeft,
@@ -27,13 +28,16 @@ import {
   Scale,
   Settings2,
   Sparkles,
+  SwitchCamera,
   Trash2,
+  Upload,
   UserPlus,
   Users,
   Volume2,
   VolumeX,
   WalletCards,
   X,
+  Zap,
 } from 'lucide-react';
 import {
   AlertDialog,
@@ -772,35 +776,39 @@ function QrScannerView({
   const [error, setError] = useState('');
   const [result, setResult] = useState<CheckInResult | null>(null);
   const [manualInput, setManualInput] = useState('');
+  const [hasFlash, setHasFlash] = useState(false);
+  const [flashOn, setFlashOn] = useState(false);
+  const [cameras, setCameras] = useState<Array<{ id: string; label: string }>>([]);
+  const [cameraIndex, setCameraIndex] = useState(0);
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const busyRef = useRef(false);
-  const scannerRef = useRef<{ start: () => Promise<void>; stop: () => void; destroy: () => void; pause: () => Promise<boolean> | boolean } | null>(null);
+  const scannerRef = useRef<QrScanner | null>(null);
+  const currentStreamRef = useRef<MediaStream | null>(null);
 
-  useEffect(() => {
-    const context = document.modelContext;
-    if (!context?.registerTool) return;
-    const lifecycle = new AbortController();
-    void Promise.resolve(
-      context.registerTool(
-        {
-          name: 'start_patient_qr_scan',
-          title: 'Abrir lector de pacientes',
-          description: 'Abre la cámara del panel para escanear la tarjeta QR que presenta un paciente.',
-          inputSchema: { type: 'object', properties: {}, additionalProperties: false },
-          annotations: { readOnlyHint: true, untrustedContentHint: false },
-          async execute() {
-            setResult(null);
-            setError('');
-            setCameraOpen(true);
-            containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            return { status: 'scanner_opened' };
-          },
-        },
-        { signal: lifecycle.signal },
-      ),
-    ).catch(() => undefined);
-    return () => lifecycle.abort();
+  const stopCamera = useCallback(() => {
+    if (currentStreamRef.current) {
+      for (const track of currentStreamRef.current.getTracks()) {
+        try {
+          track.stop();
+        } catch {}
+      }
+      currentStreamRef.current = null;
+    }
+    if (scannerRef.current) {
+      try {
+        scannerRef.current.stop();
+        scannerRef.current.destroy();
+      } catch {}
+      scannerRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setCameraOpen(false);
+    setFlashOn(false);
   }, []);
 
   const registerQr = useCallback(
@@ -825,14 +833,8 @@ function QrScannerView({
         const body = (await response.json()) as CheckInResult & { error?: string };
         if (!response.ok) throw new Error(body.error || 'No se pudo registrar la llegada.');
 
-        try {
-          scannerRef.current?.stop();
-          scannerRef.current?.destroy();
-          scannerRef.current = null;
-        } catch {}
-
+        stopCamera();
         setResult(body);
-        setCameraOpen(false);
         onRegistered();
       } catch (requestError) {
         clearTimeout(timer);
@@ -853,51 +855,247 @@ function QrScannerView({
         busyRef.current = false;
       }
     },
-    [onRegistered, result],
+    [onRegistered, result, stopCamera],
+  );
+
+  const startCamera = useCallback(async (preferredDeviceId?: string) => {
+    setError('');
+    // Stop any active stream first
+    if (currentStreamRef.current) {
+      for (const track of currentStreamRef.current.getTracks()) {
+        try {
+          track.stop();
+        } catch {}
+      }
+      currentStreamRef.current = null;
+    }
+    if (scannerRef.current) {
+      try {
+        scannerRef.current.stop();
+        scannerRef.current.destroy();
+      } catch {}
+      scannerRef.current = null;
+    }
+
+    if (!navigator?.mediaDevices?.getUserMedia) {
+      setError('Este navegador no tiene acceso a la cámara. Usa Safari en iPhone o Chrome en Android con conexión HTTPS.');
+      return;
+    }
+
+    // High quality mobile constraints (1280x720 ideal avoids pixelation on Android, ideal environment avoids iOS OverconstrainedError)
+    const constraintsAttempts: MediaStreamConstraints[] = [
+      preferredDeviceId
+        ? { video: { deviceId: { exact: preferredDeviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }
+        : { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+      { video: { facingMode: 'environment' }, audio: false },
+      { video: true, audio: false },
+    ];
+
+    let acquiredStream: MediaStream | null = null;
+    let lastErr: unknown = null;
+
+    for (const constraints of constraintsAttempts) {
+      try {
+        acquiredStream = await navigator.mediaDevices.getUserMedia(constraints);
+        if (acquiredStream) break;
+      } catch (attemptErr) {
+        lastErr = attemptErr;
+        const errName = (attemptErr as Error)?.name || '';
+        // If explicitly denied permission, do not loop
+        if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
+          break;
+        }
+      }
+    }
+
+    if (!acquiredStream) {
+      console.error('Camera stream error:', lastErr);
+      const errName = (lastErr as Error)?.name || '';
+      if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
+        setError(
+          'Permiso de cámara denegado. En iPhone: abre Ajustes > Safari > Cámara y pulsa "Permitir". En Android: pulsa el candado o icono de permisos en la barra del navegador y activa "Cámara".',
+        );
+      } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
+        setError('No se encontró ninguna cámara disponible en este dispositivo.');
+      } else if (errName === 'NotReadableError' || errName === 'TrackStartError') {
+        setError('La cámara está en uso por otra app (WhatsApp, etc.). Ciérrala y reintenta.');
+      } else {
+        setError('No se pudo activar la cámara en vivo. Puedes pulsar "Tomar Foto QR" para usar la cámara nativa de tu celular.');
+      }
+      setCameraOpen(false);
+      return;
+    }
+
+    // Try continuous focus on Android Chrome
+    const track = acquiredStream.getVideoTracks()[0];
+    if (track && 'applyConstraints' in track) {
+      try {
+        await track.applyConstraints({
+          advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet],
+        });
+      } catch {}
+    }
+
+    currentStreamRef.current = acquiredStream;
+    setCameraOpen(true);
+
+    // List available cameras
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = devices
+        .filter((d) => d.kind === 'videoinput')
+        .map((d, idx) => ({ id: d.deviceId, label: d.label || `Cámara ${idx + 1}` }));
+      setCameras(videoDevices);
+    } catch {}
+  }, []);
+
+  const switchCamera = useCallback(async () => {
+    if (cameras.length <= 1) {
+      void startCamera();
+      return;
+    }
+    const nextIdx = (cameraIndex + 1) % cameras.length;
+    setCameraIndex(nextIdx);
+    await startCamera(cameras[nextIdx].id);
+  }, [cameraIndex, cameras, startCamera]);
+
+  const toggleTorch = useCallback(async () => {
+    if (!scannerRef.current) return;
+    try {
+      await scannerRef.current.toggleFlash();
+      setFlashOn(scannerRef.current.isFlashOn());
+    } catch (flashErr) {
+      console.warn('Flash error:', flashErr);
+    }
+  }, []);
+
+  const handleFileScan = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      setProcessing(true);
+      setError('');
+      try {
+        try {
+          QrScanner.WORKER_PATH = '/qr-scanner-worker.min.js';
+        } catch {}
+
+        const scanResult = await QrScanner.scanImage(file, {
+          returnDetailedScanResult: true,
+          alsoTryWithoutScanRegion: true,
+        });
+
+        const raw = typeof scanResult === 'string' ? scanResult : scanResult?.data;
+        if (raw) {
+          await registerQr(raw);
+        } else {
+          setError('No se detectó un código QR legible en la foto. Asegúrate de enfocar con claridad el código.');
+        }
+      } catch (err) {
+        console.error('File scan error:', err);
+        setError('No se pudo leer el código QR de la foto. Toma la foto de más cerca y con buena iluminación.');
+      } finally {
+        setProcessing(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+    },
+    [registerQr],
   );
 
   useEffect(() => {
-    if (!cameraOpen || !videoRef.current) return;
-    let cancelled = false;
-
-    void import('qr-scanner').then(async ({ default: QrScanner }) => {
-      if (cancelled || !videoRef.current) return;
-      try {
-        QrScanner.WORKER_PATH = '/qr-scanner-worker.min.js';
-      } catch {}
-
-      const instance = new QrScanner(
-        videoRef.current,
-        (scanResult) => {
-          const raw = typeof scanResult === 'string' ? scanResult : scanResult?.data;
-          if (raw && !busyRef.current) {
-            try {
-              instance.pause();
-            } catch {}
-            void registerQr(raw);
-          }
-        },
+    const context = document.modelContext;
+    if (!context?.registerTool) return;
+    const lifecycle = new AbortController();
+    void Promise.resolve(
+      context.registerTool(
         {
-          preferredCamera: 'environment',
-          highlightScanRegion: true,
-          highlightCodeOutline: true,
-          maxScansPerSecond: 4,
-          returnDetailedScanResult: true,
+          name: 'start_patient_qr_scan',
+          title: 'Abrir lector de pacientes',
+          description: 'Abre la cámara del panel para escanear la tarjeta QR que presenta un paciente.',
+          inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+          annotations: { readOnlyHint: true, untrustedContentHint: false },
+          async execute() {
+            setResult(null);
+            setError('');
+            void startCamera();
+            containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return { status: 'scanner_opened' };
+          },
         },
-      );
-      scannerRef.current = instance;
+        { signal: lifecycle.signal },
+      ),
+    ).catch(() => undefined);
+    return () => lifecycle.abort();
+  }, [startCamera]);
 
-      try {
-        await instance.start();
-      } catch (camErr) {
-        console.error('Camera start error:', camErr);
-        setError('No se pudo activar la cámara. Revisa los permisos o usa la búsqueda manual a la derecha.');
-        setCameraOpen(false);
-      }
-    });
+  useEffect(() => {
+    if (!cameraOpen || !videoRef.current || !currentStreamRef.current) return;
+    const video = videoRef.current;
+    const stream = currentStreamRef.current;
+
+    video.srcObject = stream;
+    video.setAttribute('playsinline', 'true');
+    video.setAttribute('webkit-playsinline', 'true');
+    video.muted = true;
+    video.autoplay = true;
+
+    let active = true;
+
+    void video
+      .play()
+      .then(() => {
+        if (!active) return;
+        try {
+          QrScanner.WORKER_PATH = '/qr-scanner-worker.min.js';
+        } catch {}
+
+        const instance = new QrScanner(
+          video,
+          (scanResult) => {
+            const raw = typeof scanResult === 'string' ? scanResult : scanResult?.data;
+            if (raw && !busyRef.current) {
+              try {
+                instance.pause();
+              } catch {}
+              void registerQr(raw);
+            }
+          },
+          {
+            preferredCamera: 'environment',
+            highlightScanRegion: true,
+            highlightCodeOutline: true,
+            maxScansPerSecond: 12,
+            returnDetailedScanResult: true,
+            calculateScanRegion: (vid) => {
+              const minDim = Math.min(vid.videoWidth || 640, vid.videoHeight || 480);
+              const size = Math.round(minDim * 0.75);
+              return {
+                x: Math.round(((vid.videoWidth || 640) - size) / 2),
+                y: Math.round(((vid.videoHeight || 480) - size) / 2),
+                width: size,
+                height: size,
+                downScaledWidth: Math.min(size, 600),
+                downScaledHeight: Math.min(size, 600),
+              };
+            },
+          },
+        );
+
+        scannerRef.current = instance;
+
+        void instance.start().then(async () => {
+          try {
+            const flashAvailable = await instance.hasFlash();
+            setHasFlash(flashAvailable);
+          } catch {}
+        });
+      })
+      .catch((playErr) => {
+        console.error('Video play error:', playErr);
+      });
 
     return () => {
-      cancelled = true;
+      active = false;
       try {
         scannerRef.current?.stop();
         scannerRef.current?.destroy();
@@ -906,15 +1104,32 @@ function QrScannerView({
     };
   }, [cameraOpen, registerQr]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, [stopCamera]);
+
   function reset() {
+    stopCamera();
     setResult(null);
     setError('');
-    setCameraOpen(false);
     setManualInput('');
   }
 
   return (
     <div ref={containerRef} className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+      {/* Hidden file input for native camera capture fallback */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => void handleFileScan(e)}
+      />
+
       <Card className="overflow-hidden rounded-[2rem] border-0 bg-slate-950 text-white shadow-xl">
         <CardContent className="relative grid min-h-[620px] place-items-center p-6 text-center sm:p-9">
           {result ? (
@@ -943,12 +1158,43 @@ function QrScannerView({
             </div>
           ) : cameraOpen ? (
             <div className="w-full max-w-lg">
-              <p className="text-sm font-bold uppercase tracking-[0.18em] text-cyan-300">Cámara activa</p>
-              <h2 className="mt-3 text-3xl font-black">Apunta al QR del paciente</h2>
-              <div className="relative mx-auto mt-7 aspect-[4/5] max-h-[430px] overflow-hidden rounded-[1.75rem] border-2 border-cyan-300/50 bg-black shadow-inner">
-                <video ref={videoRef} className="h-full w-full object-cover" muted playsInline />
+              <div className="flex items-center justify-between mb-3 px-1">
+                <div className="flex items-center gap-2">
+                  <span className="size-2.5 rounded-full bg-emerald-400 animate-ping" />
+                  <p className="text-xs sm:text-sm font-black uppercase tracking-[0.16em] text-cyan-300">Cámara HD Activa</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {hasFlash && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void toggleTorch()}
+                      className={`h-8 rounded-lg px-2.5 text-xs font-bold border-white/20 ${flashOn ? 'bg-amber-400 text-slate-950 font-black' : 'bg-white/10 text-white'}`}
+                    >
+                      <Zap className="size-3.5 mr-1" /> {flashOn ? 'Luz ON' : 'Linterna'}
+                    </Button>
+                  )}
+                  {cameras.length > 1 && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void switchCamera()}
+                      className="h-8 rounded-lg px-2.5 text-xs font-bold border-white/20 bg-white/10 text-white hover:bg-white/20"
+                    >
+                      <SwitchCamera className="size-3.5 mr-1" /> Lente
+                    </Button>
+                  )}
+                </div>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black">Apunta al QR del paciente</h2>
+              <div className="relative mx-auto mt-4 aspect-[4/5] max-h-[430px] overflow-hidden rounded-[1.75rem] border-2 border-cyan-300/50 bg-black shadow-inner">
+                <video ref={videoRef} className="h-full w-full object-cover" autoPlay playsInline muted />
+                {/* Visual scan frame guide */}
+                <div className="pointer-events-none absolute inset-0 grid place-items-center">
+                  <div className="size-56 sm:size-64 rounded-2xl border-2 border-dashed border-cyan-400/70 bg-cyan-400/5 animate-pulse" />
+                </div>
                 {processing && (
-                  <div className="absolute inset-0 grid place-items-center bg-slate-950/80 backdrop-blur-xs">
+                  <div className="absolute inset-0 grid place-items-center bg-slate-950/85 backdrop-blur-xs">
                     <div className="text-center space-y-2">
                       <LoaderCircle className="size-11 animate-spin text-cyan-300 mx-auto" />
                       <p className="text-sm font-bold text-cyan-200">Verificando paciente...</p>
@@ -956,9 +1202,14 @@ function QrScannerView({
                   </div>
                 )}
               </div>
-              <Button variant="outline" onClick={() => setCameraOpen(false)} className="mt-5 h-12 rounded-xl border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white">
-                Cancelar
-              </Button>
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
+                <Button variant="outline" onClick={stopCamera} className="h-11 rounded-xl border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white px-5 font-bold text-sm">
+                  Cerrar cámara
+                </Button>
+                <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="h-11 rounded-xl border-white/20 bg-white/10 text-white hover:bg-white/20 px-5 font-bold text-sm">
+                  <Upload className="size-4 mr-2 text-cyan-300" /> Tomar foto con celular
+                </Button>
+              </div>
             </div>
           ) : (
             <div>
@@ -970,12 +1221,32 @@ function QrScannerView({
               <p className="mx-auto mt-4 max-w-md text-base leading-7 text-white/65">
                 Apunta con la cámara al código QR de la tarjeta digital o impresa. El paciente también puede escanearlo con la cámara de su propio celular.
               </p>
-              <Button onClick={() => { setError(''); setCameraOpen(true); }} className="mt-8 h-14 rounded-2xl bg-cyan-300 px-8 text-base font-black text-slate-950 hover:bg-cyan-200 shadow-lg shadow-cyan-300/25">
-                <Camera className="size-5 mr-2" /> Abrir cámara
-              </Button>
+              <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <Button
+                  onClick={() => void startCamera()}
+                  className="h-14 w-full sm:w-auto rounded-2xl bg-cyan-300 px-8 text-base font-black text-slate-950 hover:bg-cyan-200 shadow-lg shadow-cyan-300/25"
+                >
+                  <Camera className="size-5 mr-2" /> Abrir cámara en vivo
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="h-14 w-full sm:w-auto rounded-2xl border-white/20 bg-white/10 px-6 text-base font-bold text-white hover:bg-white/20"
+                >
+                  <Upload className="size-5 mr-2 text-cyan-300" /> Tomar foto QR con celular
+                </Button>
+              </div>
             </div>
           )}
-          {error && <p role="alert" className="absolute bottom-6 mx-6 rounded-xl bg-red-500/20 border border-red-500/30 px-4 py-3 text-sm font-semibold text-red-200">{error}</p>}
+          {error && (
+            <div role="alert" className="absolute bottom-5 inset-x-6 mx-auto max-w-md rounded-2xl bg-red-950/90 border border-red-500/50 p-4 text-xs sm:text-sm font-semibold text-red-100 shadow-2xl backdrop-blur-md text-left space-y-1">
+              <div className="flex items-center justify-between text-red-300 font-bold">
+                <span>Aviso de cámara</span>
+                <button onClick={() => setError('')} className="text-red-300 hover:text-white text-xs">Cerrar</button>
+              </div>
+              <p className="leading-snug">{error}</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
