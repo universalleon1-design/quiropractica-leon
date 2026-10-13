@@ -124,7 +124,7 @@ export function NewPatientPageView({
   const [legLengthSide, setLegLengthSide] = useState<'Derecha' | 'Izquierda' | 'Iguales'>('Derecha');
   const [sacroiliacPain, setSacroiliacPain] = useState<'SI' | 'NO'>('NO');
   const [sacroiliacSide, setSacroiliacSide] = useState<'Derecho' | 'Izquierdo' | 'Bilateral'>('Derecho');
-  const [cervicalSyndrome, setCervicalSyndrome] = useState('');
+  const [cervicalSyndrome, setCervicalSyndrome] = useState<'SI' | 'NO'>('NO');
   const [dynamicPalpation, setDynamicPalpation] = useState('');
   const [strongerLeg, setStrongerLeg] = useState<'D' | 'I' | 'Neutro'>('D');
   const [staticPalpation, setStaticPalpation] = useState('');
@@ -262,7 +262,7 @@ export function NewPatientPageView({
       pronePosition: legLengthSide,
       legLength: legLengthSide,
       sacroiliacPain: `${sacroiliacPain}${sacroiliacPain === 'SI' ? ` (${sacroiliacSide})` : ''}`,
-      cervicalSyndrome: cervicalSyndrome.trim(),
+      cervicalSyndrome,
       dynamicPalpation: dynamicPalpation.trim(),
       strongerLeg,
       staticPalpation: staticPalpation.trim(),
@@ -1462,14 +1462,26 @@ export function NewPatientPageView({
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="cervicalSynd">SÍNDROME CERVICAL</Label>
-                    <Input
-                      id="cervicalSynd"
-                      placeholder="Observaciones de síndrome cervical..."
-                      value={cervicalSyndrome}
-                      onChange={(e) => setCervicalSyndrome(e.target.value)}
-                      className="h-10 rounded-xl"
-                    />
+                    <Label>SÍNDROME CERVICAL: ( SI ) / ( NO )</Label>
+                    <div className="flex gap-1.5">
+                      {(['SI', 'NO'] as const).map((opt) => (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() => setCervicalSyndrome(opt)}
+                          className={cn(
+                            'h-10 flex-1 rounded-xl text-xs sm:text-sm font-black border transition',
+                            cervicalSyndrome === opt
+                              ? opt === 'SI'
+                                ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                                : 'bg-slate-900 text-white border-slate-900 shadow-xs'
+                              : 'bg-white hover:bg-slate-50 text-slate-800'
+                          )}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
