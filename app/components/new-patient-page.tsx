@@ -121,9 +121,7 @@ export function NewPatientPageView({
   const [gaitHeels, setGaitHeels] = useState('Normal');
 
   // Pagina 2: Postura y Palpacion
-  const [pronePosition, setPronePosition] = useState('');
   const [legLengthSide, setLegLengthSide] = useState<'Derecha' | 'Izquierda' | 'Iguales'>('Derecha');
-  const [legLengthDiff, setLegLengthDiff] = useState('');
   const [sacroiliacPain, setSacroiliacPain] = useState<'SI' | 'NO'>('NO');
   const [sacroiliacSide, setSacroiliacSide] = useState<'Derecho' | 'Izquierdo' | 'Bilateral'>('Derecho');
   const [cervicalSyndrome, setCervicalSyndrome] = useState('');
@@ -261,8 +259,8 @@ export function NewPatientPageView({
       iliac: `Izq: ${iliacLeft}/5 • Der: ${iliacRight}/5`,
       gaitTiptoes,
       gaitHeels,
-      pronePosition: pronePosition.trim(),
-      legLength: `${legLengthSide}${legLengthDiff ? ` (${legLengthDiff})` : ''}`,
+      pronePosition: legLengthSide,
+      legLength: legLengthSide,
       sacroiliacPain: `${sacroiliacPain}${sacroiliacPain === 'SI' ? ` (${sacroiliacSide})` : ''}`,
       cervicalSyndrome: cervicalSyndrome.trim(),
       dynamicPalpation: dynamicPalpation.trim(),
@@ -1401,18 +1399,7 @@ export function NewPatientPageView({
                 </h3>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
-                    <Label htmlFor="pronePos">POSICIÓN PRONO</Label>
-                    <Input
-                      id="pronePos"
-                      placeholder="Observaciones en prono (simetría, inclinación...)"
-                      value={pronePosition}
-                      onChange={(e) => setPronePosition(e.target.value)}
-                      className="h-10 rounded-xl"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label>LARGO DE LAS PIERNAS: DERECHA / IZQUIERDA</Label>
+                    <Label>POSICIÓN PRONO: LARGO DE LAS PIERNAS ( DERECHA / IZQUIERDA )</Label>
                     <div className="flex gap-1.5">
                       {(['Derecha', 'Izquierda', 'Iguales'] as const).map((side) => (
                         <button
@@ -1420,7 +1407,7 @@ export function NewPatientPageView({
                           type="button"
                           onClick={() => setLegLengthSide(side)}
                           className={cn(
-                            'h-9 flex-1 rounded-lg text-xs sm:text-sm font-bold border transition',
+                            'h-10 flex-1 rounded-xl text-xs sm:text-sm font-bold border transition',
                             legLengthSide === side
                               ? 'bg-cyan-700 text-white border-cyan-700 shadow-xs'
                               : 'bg-white hover:bg-slate-50 text-slate-800'
@@ -1430,14 +1417,6 @@ export function NewPatientPageView({
                         </button>
                       ))}
                     </div>
-                    {legLengthSide !== 'Iguales' && (
-                      <Input
-                        placeholder="Diferencia aprox. (ej. Corta 1 cm, Corta 5 mm)"
-                        value={legLengthDiff}
-                        onChange={(e) => setLegLengthDiff(e.target.value)}
-                        className="h-9 rounded-lg mt-1.5 font-medium text-xs sm:text-sm"
-                      />
-                    )}
                   </div>
 
                   <div className="space-y-1.5">

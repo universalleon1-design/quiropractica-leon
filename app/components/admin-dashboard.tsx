@@ -1874,12 +1874,8 @@ function PatientRecordPage({ patient, onBack, onDeleted, onSaved }: { patient: P
                   <p className="text-sm font-black uppercase tracking-wider text-cyan-800">2. Evaluación Postural y Palpación</p>
                   <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                     <div>
-                      <span className="text-sm text-slate-700 font-bold block">Posición Prono</span>
-                      <strong className="text-base font-bold text-slate-900 block mt-0.5">{record.anamnesis.prone_position || 'Normal'}</strong>
-                    </div>
-                    <div>
-                      <span className="text-sm text-slate-700 font-bold block">Largo de Piernas</span>
-                      <strong className="text-base font-bold text-slate-900 block mt-0.5">{record.anamnesis.leg_length || 'Iguales'}</strong>
+                      <span className="text-sm text-slate-700 font-bold block">Posición Prono: Largo de Piernas</span>
+                      <strong className="text-base font-bold text-slate-900 block mt-0.5">{record.anamnesis.leg_length || record.anamnesis.prone_position || 'Iguales'}</strong>
                     </div>
                     <div>
                       <span className="text-sm text-slate-700 font-bold block">Dolor Sacro Ilíaco</span>
