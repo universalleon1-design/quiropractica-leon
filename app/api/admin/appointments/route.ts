@@ -38,6 +38,25 @@ export async function PATCH(request: Request) {
     ];
 
     if (body.status === 'completed' && appointment.status !== 'completed') {
+      const apptRecord = await env.DB.prepare(
+        'SELECT appointment_date AS appointmentDate FROM appointments WHERE id = ? LIMIT 1',
+      ).bind(body.appointmentId).first<{ appointmentDate: string }>();
+
+      if (apptRecord) {
+        const otherCompleted = await env.DB.prepare(
+          `SELECT id FROM appointments
+           WHERE patient_id = ? AND appointment_date = ?
+             AND status = 'completed' AND id != ?
+           LIMIT 1`,
+        ).bind(appointment.patientId, apptRecord.appointmentDate, body.appointmentId).first<{ id: string }>();
+
+        if (otherCompleted) {
+          return NextResponse.json({
+            error: 'El paciente ya tiene una asistencia completada en esta misma fecha. Solo se permite 1 asistencia por día.',
+          }, { status: 409 });
+        }
+      }
+
       statements.push(
         env.DB.prepare(
           `UPDATE session_packages
@@ -90,6 +109,23 @@ export async function POST(request: Request) {
     }
 
     if (body.action === 'register_session') {
+      const alreadyAttendedToday = await env.DB.prepare(
+        `SELECT a.id, a.start_time AS startTime, a.status
+         FROM appointments a
+         WHERE a.patient_id = ? AND a.appointment_date = ?
+           AND a.status IN ('completed', 'in_session', 'checked_in')
+         LIMIT 1`,
+      ).bind(patientId, today).first<{ id: string; startTime: string; status: string }>();
+
+      if (alreadyAttendedToday) {
+        return NextResponse.json({
+          error: 'El paciente ya cuenta con una asistencia registrada el día de hoy. Solo se permite 1 asistencia por día.',
+          alreadyAttendedToday: true,
+          used: pkg.used,
+          total: pkg.total,
+        }, { status: 409 });
+      }
+
       const apptId = makeId('appointment');
       const newUsed = pkg.used + 1;
       await env.DB.batch([

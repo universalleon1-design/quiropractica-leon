@@ -117,6 +117,7 @@ type Patient = {
   used: number;
   total: number;
   qrValue?: string | null;
+  attendedToday?: boolean;
 };
 
 type DashboardData = {
@@ -1364,28 +1365,41 @@ function PatientsView({
               </div>
 
               <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between gap-2 text-sm">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    const res = await fetch('/api/admin/appointments', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ patientId: patient.id, action: 'register_session' }),
-                    });
-                    const body = (await res.json()) as { ok?: boolean; used?: number; total?: number };
-                    if (res.ok && body.used !== undefined) {
-                      patient.used = body.used;
-                      if (body.total !== undefined) patient.total = body.total;
-                      onDeleted(); // triggers refresh()
-                    }
-                  }}
-                  className="h-8.5 rounded-xl text-xs font-black bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300 shadow-2xs"
-                  title="Registrar una sesión asistida hoy para este paciente"
-                >
-                  <Plus className="size-3 mr-1" /> +1 Asistencia Hoy
-                </Button>
+                {patient.attendedToday ? (
+                  <span
+                    className="inline-flex items-center h-8.5 rounded-xl text-xs font-black bg-emerald-100/90 text-emerald-900 border border-emerald-300 px-3 shadow-2xs"
+                    title="El paciente ya tiene su asistencia registrada el día de hoy (máximo 1 al día)"
+                  >
+                    <Check className="size-3.5 mr-1 stroke-[3]" /> Asistió Hoy (1/día)
+                  </span>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      const res = await fetch('/api/admin/appointments', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ patientId: patient.id, action: 'register_session' }),
+                      });
+                      const body = (await res.json()) as { ok?: boolean; used?: number; total?: number; error?: string };
+                      if (res.ok && body.used !== undefined) {
+                        patient.used = body.used;
+                        patient.attendedToday = true;
+                        if (body.total !== undefined) patient.total = body.total;
+                        onDeleted(); // triggers refresh()
+                      } else if (body.error) {
+                        alert(body.error);
+                        onDeleted();
+                      }
+                    }}
+                    className="h-8.5 rounded-xl text-xs font-black bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300 shadow-2xs"
+                    title="Registrar la asistencia de hoy para este paciente (1 al día)"
+                  >
+                    <Plus className="size-3 mr-1" /> +1 Asistencia Hoy
+                  </Button>
+                )}
                 <button
                   type="button"
                   onClick={() => onPatient(patient)}
@@ -1809,6 +1823,11 @@ function PatientRecordPage({ patient, onBack, onDeleted, onSaved }: { patient: P
     onDeleted();
   }
 
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const alreadyAttendedToday = record?.visits?.some(
+    (v) => v.appointmentDate === todayStr && (v.status === 'completed' || v.status === 'checked_in' || v.status === 'in_session')
+  ) ?? (patient.attendedToday ?? false);
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-4 rounded-3xl bg-slate-950 p-5 text-white sm:flex-row sm:items-center sm:justify-between sm:p-7">
@@ -1841,14 +1860,23 @@ function PatientRecordPage({ patient, onBack, onDeleted, onSaved }: { patient: P
                   {patient.used} <span className="text-lg font-normal text-slate-400">/ {patient.total}</span>
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <Button
-                    size="sm"
-                    disabled={updatingSessions}
-                    onClick={() => void handleQuickSession('register_session')}
-                    className="h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-xs"
-                  >
-                    <Plus className="size-3.5 mr-1" /> +1 Sesión Hoy
-                  </Button>
+                  {alreadyAttendedToday ? (
+                    <span
+                      className="inline-flex items-center h-8 rounded-lg bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-black px-2.5"
+                      title="El paciente ya tiene una asistencia registrada el día de hoy (1 asistencia por día)"
+                    >
+                      <Check className="size-3.5 mr-1 stroke-[3]" /> Asistió Hoy (1/día)
+                    </span>
+                  ) : (
+                    <Button
+                      size="sm"
+                      disabled={updatingSessions}
+                      onClick={() => void handleQuickSession('register_session')}
+                      className="h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-xs"
+                    >
+                      <Plus className="size-3.5 mr-1" /> +1 Sesión Hoy
+                    </Button>
+                  )}
                   {patient.used > 0 && (
                     <Button
                       size="sm"
@@ -2167,11 +2195,25 @@ function PatientRecordPage({ patient, onBack, onDeleted, onSaved }: { patient: P
                 </div>
                 <Button
                   size="sm"
-                  disabled={updatingSessions}
+                  disabled={updatingSessions || alreadyAttendedToday}
                   onClick={() => void handleQuickSession('register_session')}
-                  className="h-9 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs shadow-xs self-start sm:self-auto"
+                  className={cn(
+                    "h-9 rounded-xl font-bold text-xs shadow-xs self-start sm:self-auto",
+                    alreadyAttendedToday
+                      ? "bg-slate-200 text-slate-500 cursor-not-allowed border"
+                      : "bg-emerald-700 hover:bg-emerald-800 text-white"
+                  )}
+                  title={alreadyAttendedToday ? "El paciente ya asistió el día de hoy (máximo 1 asistencia por día)" : undefined}
                 >
-                  <Plus className="size-3.5 mr-1" /> +1 Registrar Sesión Hoy
+                  {alreadyAttendedToday ? (
+                    <>
+                      <Check className="size-3.5 mr-1 stroke-[3]" /> Ya asistió hoy (1/día)
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="size-3.5 mr-1" /> +1 Registrar Sesión Hoy
+                    </>
+                  )}
                 </Button>
               </div>
 

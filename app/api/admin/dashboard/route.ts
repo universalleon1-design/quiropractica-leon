@@ -11,6 +11,7 @@ export async function GET() {
   await ensureDbInitialized();
 
   try {
+    const today = todayInLima();
     const [scheduleResult, patientsResult, statsTotalResult] = await Promise.all([
       env.DB.prepare(
         `SELECT a.id, a.patient_id AS patientId, a.start_time AS time,
@@ -24,18 +25,23 @@ export async function GET() {
          WHERE a.appointment_date = ?
          ORDER BY a.start_time ASC`,
       )
-        .bind(todayInLima())
+        .bind(today)
         .all<{ id: string; patientId: string; time: string; name: string; status: string; used: number; total: number }>(),
       env.DB.prepare(
         `SELECT p.id, p.first_name || ' ' || p.last_name AS name, p.phone,
                 p.qr_token AS qrToken,
                 COALESCE(sp.used_sessions, 0) AS used,
-                COALESCE(sp.total_sessions, 0) AS total
+                COALESCE(sp.total_sessions, 0) AS total,
+                EXISTS (
+                  SELECT 1 FROM appointments a
+                  WHERE a.patient_id = p.id AND a.appointment_date = ?
+                    AND a.status IN ('completed', 'in_session', 'checked_in')
+                ) AS attendedToday
          FROM patients p
          LEFT JOIN session_packages sp ON sp.patient_id = p.id
          ORDER BY p.created_at DESC
          LIMIT 200`,
-      ).all<{ id: string; name: string; phone: string | null; used: number; total: number; qrToken: string | null }>(),
+      ).bind(today).all<{ id: string; name: string; phone: string | null; used: number; total: number; qrToken: string | null; attendedToday: number }>(),
       env.DB.prepare('SELECT COUNT(*) as count FROM patients').first<{ count: number }>(),
     ]);
 
@@ -46,6 +52,7 @@ export async function GET() {
 
     const patients = (patientsResult?.results ?? []).map((patient) => ({
       ...patient,
+      attendedToday: Boolean(patient.attendedToday),
       qrValue: patient.qrToken ? makePatientQrValue(patient.qrToken) : null,
       qrToken: undefined,
     }));
