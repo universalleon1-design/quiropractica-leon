@@ -446,29 +446,31 @@ export function NewPatientPageView({
             </div>
           </div>
 
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="mt-7 space-y-2.5 w-full max-w-lg mx-auto">
             <Button
               onClick={() => onFinished(result.patient)}
-              className="h-12 w-full sm:w-auto rounded-xl px-7 font-bold bg-emerald-700 hover:bg-emerald-800 text-white shadow-md"
+              className="h-12 w-full rounded-xl px-6 font-black bg-emerald-700 hover:bg-emerald-800 text-white shadow-md text-sm sm:text-base"
             >
-              <FileText className="mr-2 size-4" /> Abrir expediente clínico completo
+              <FileText className="mr-2 size-5" /> Abrir expediente clínico completo
             </Button>
-            {onViewPatients && (
+            <div className="flex flex-col sm:flex-row gap-2.5 w-full">
+              {onViewPatients && (
+                <Button
+                  variant="outline"
+                  onClick={onViewPatients}
+                  className="h-11 flex-1 rounded-xl px-4 font-bold border-cyan-300 text-cyan-900 hover:bg-cyan-50 text-xs sm:text-sm"
+                >
+                  <Users className="mr-2 size-4 text-cyan-700" /> Ir a lista de Pacientes
+                </Button>
+              )}
               <Button
                 variant="outline"
-                onClick={onViewPatients}
-                className="h-12 w-full sm:w-auto rounded-xl px-5 font-bold border-cyan-300 text-cyan-900 hover:bg-cyan-50"
+                onClick={resetForm}
+                className="h-11 flex-1 rounded-xl px-4 font-bold border-slate-300 hover:bg-slate-50 text-slate-800 text-xs sm:text-sm"
               >
-                <Users className="mr-2 size-4 text-cyan-700" /> Ir a lista de Pacientes
+                <Plus className="mr-2 size-4" /> Registrar otro paciente
               </Button>
-            )}
-            <Button
-              variant="outline"
-              onClick={resetForm}
-              className="h-12 w-full sm:w-auto rounded-xl px-5 font-bold border-slate-300 hover:bg-slate-50"
-            >
-              <Plus className="mr-2 size-4" /> Registrar otro
-            </Button>
+            </div>
           </div>
         </Card>
       </div>
