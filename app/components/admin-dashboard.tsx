@@ -778,13 +778,14 @@ function QrScannerView({
   const [manualInput, setManualInput] = useState('');
   const [hasFlash, setHasFlash] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
+  const [supportsZoom, setSupportsZoom] = useState(false);
+  const [zoom, setZoom] = useState(1);
   const [cameras, setCameras] = useState<Array<{ id: string; label: string }>>([]);
   const [cameraIndex, setCameraIndex] = useState(0);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const busyRef = useRef(false);
-  const scannerRef = useRef<QrScanner | null>(null);
   const currentStreamRef = useRef<MediaStream | null>(null);
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
 
@@ -815,18 +816,13 @@ function QrScannerView({
       }
       currentStreamRef.current = null;
     }
-    if (scannerRef.current) {
-      try {
-        scannerRef.current.stop();
-        scannerRef.current.destroy();
-      } catch {}
-      scannerRef.current = null;
-    }
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
     setCameraOpen(false);
     setFlashOn(false);
+    setZoom(1);
+    setSupportsZoom(false);
   }, [releaseWakeLock]);
 
   const registerQr = useCallback(
@@ -863,10 +859,10 @@ function QrScannerView({
         setError(msg);
       } finally {
         setProcessing(false);
-        // Wait 1.5s before allowing next scan to prevent double trigger
+        // Cooldown before scanning another code
         setTimeout(() => {
           busyRef.current = false;
-        }, 1500);
+        }, 1800);
       }
     },
     [onRegistered, stopCamera],
@@ -874,21 +870,13 @@ function QrScannerView({
 
   const startCamera = useCallback(async (preferredDeviceId?: string) => {
     setError('');
-    // Stop any active stream first
+
+    // Stop any existing stream
     if (currentStreamRef.current) {
-      for (const track of currentStreamRef.current.getTracks()) {
-        try {
-          track.stop();
-        } catch {}
+      for (const t of currentStreamRef.current.getTracks()) {
+        try { t.stop(); } catch {}
       }
       currentStreamRef.current = null;
-    }
-    if (scannerRef.current) {
-      try {
-        scannerRef.current.stop();
-        scannerRef.current.destroy();
-      } catch {}
-      scannerRef.current = null;
     }
 
     if (!navigator?.mediaDevices?.getUserMedia) {
@@ -896,11 +884,42 @@ function QrScannerView({
       return;
     }
 
-    // High definition 1280x720 ideal constraints: keeps video crystal clear, prevents Android pixelation
-    const constraintsAttempts: MediaStreamConstraints[] = [
-      preferredDeviceId
-        ? { video: { deviceId: { exact: preferredDeviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }
+    const savedCam = typeof localStorage !== 'undefined' ? localStorage.getItem('quiropraxia_preferred_cam') : null;
+    let targetId = preferredDeviceId || savedCam || undefined;
+
+    // Enumerate devices first to prioritize the MAIN 1x camera (avoiding ultra-wide 0.5x fixed focus lenses)
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const videoInputs = devices.filter((d) => d.kind === 'videoinput');
+      const rearCams = videoInputs.filter((d) => {
+        const l = d.label.toLowerCase();
+        return !l.includes('front') && !l.includes('delantera') && !l.includes('selfie') && !l.includes('user');
+      });
+
+      const rearList = rearCams.length > 0 ? rearCams : videoInputs;
+
+      // If no explicit targetId and labels are available, pick the 1x main camera
+      if (!targetId && rearList.some((d) => d.label)) {
+        const mainCam = rearList.find((d) => {
+          const l = d.label.toLowerCase();
+          return (l.includes('0') || l.includes('main') || l.includes('principal') || l.includes('1x')) &&
+                 !l.includes('wide') && !l.includes('ultra') && !l.includes('macro');
+        }) || rearList.find((d) => {
+          const l = d.label.toLowerCase();
+          return !l.includes('wide') && !l.includes('ultra') && !l.includes('macro');
+        }) || rearList[0];
+
+        if (mainCam?.deviceId) {
+          targetId = mainCam.deviceId;
+        }
+      }
+    } catch {}
+
+    const attempts: MediaStreamConstraints[] = [
+      targetId
+        ? { video: { deviceId: { exact: targetId }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }
         : { video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
+      { video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false },
       { video: { facingMode: 'environment' }, audio: false },
       { video: true, audio: false },
     ];
@@ -908,7 +927,7 @@ function QrScannerView({
     let acquiredStream: MediaStream | null = null;
     let lastErr: unknown = null;
 
-    for (const constraints of constraintsAttempts) {
+    for (const constraints of attempts) {
       try {
         acquiredStream = await navigator.mediaDevices.getUserMedia(constraints);
         if (acquiredStream) break;
@@ -925,13 +944,7 @@ function QrScannerView({
       console.error('Camera stream error:', lastErr);
       const errName = (lastErr as Error)?.name || '';
       if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
-        setError(
-          'Permiso de cámara denegado. En iPhone: abre Ajustes > Safari > Cámara y pulsa "Permitir". En Android: pulsa el candado en la barra de direcciones y activa "Cámara".',
-        );
-      } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
-        setError('No se encontró ninguna cámara disponible en este dispositivo.');
-      } else if (errName === 'NotReadableError' || errName === 'TrackStartError') {
-        setError('La cámara está en uso por otra app. Ciérrala y reintenta.');
+        setError('Permiso de cámara denegado. En iPhone: Ajustes > Safari > Cámara > Permitir. En Android: toca el candado junto a la URL y permite la Cámara.');
       } else {
         setError('No se pudo activar la cámara. Revisa los permisos o usa la búsqueda manual a la derecha.');
       }
@@ -939,39 +952,77 @@ function QrScannerView({
       return;
     }
 
-    // Request wake lock to prevent phone screen from going dark/sleeping while camera is active
+    // Keep phone awake
     void requestWakeLock();
 
-    // Enable continuous autofocus & exposure on mobile if supported
+    // Enable continuous autofocus & exposure if supported by device
     const track = acquiredStream.getVideoTracks()[0];
     if (track && typeof (track as any).getCapabilities === 'function') {
       try {
-        const capabilities = (track as any).getCapabilities() || {};
-        const advanced: any = {};
-        if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
-          advanced.focusMode = 'continuous';
+        const caps = (track as any).getCapabilities() || {};
+        if (caps.torch) {
+          setHasFlash(true);
         }
-        if (capabilities.exposureMode && capabilities.exposureMode.includes('continuous')) {
-          advanced.exposureMode = 'continuous';
+        if (caps.zoom && caps.zoom.max > 1) {
+          setSupportsZoom(true);
         }
-        if (Object.keys(advanced).length > 0) {
-          await (track as any).applyConstraints({ advanced: [advanced] });
+        const adv: any = {};
+        if (caps.focusMode && caps.focusMode.includes('continuous')) {
+          adv.focusMode = 'continuous';
         }
-      } catch (err) {
-        console.warn('Could not apply continuous focus constraints:', err);
-      }
+        if (caps.exposureMode && caps.exposureMode.includes('continuous')) {
+          adv.exposureMode = 'continuous';
+        }
+        if (Object.keys(adv).length > 0) {
+          await (track as any).applyConstraints({ advanced: [adv] });
+        }
+      } catch {}
     }
 
     currentStreamRef.current = acquiredStream;
     setCameraOpen(true);
 
-    // List available cameras
+    // Direct bind to video element to avoid delay or black screen
+    if (videoRef.current) {
+      videoRef.current.srcObject = acquiredStream;
+      videoRef.current.setAttribute('playsinline', 'true');
+      videoRef.current.setAttribute('webkit-playsinline', 'true');
+      videoRef.current.muted = true;
+      videoRef.current.autoplay = true;
+      void videoRef.current.play().catch(() => {});
+    }
+
+    // List available cameras for switching lenses
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices
-        .filter((d) => d.kind === 'videoinput')
-        .map((d, idx) => ({ id: d.deviceId, label: d.label || `Cámara ${idx + 1}` }));
-      setCameras(videoDevices);
+      const videoInputs = devices.filter((d) => d.kind === 'videoinput');
+      const rearCams = videoInputs.filter((d) => {
+        const l = d.label.toLowerCase();
+        return !l.includes('front') && !l.includes('delantera') && !l.includes('selfie') && !l.includes('user');
+      });
+      const rearList = rearCams.length > 0 ? rearCams : videoInputs;
+      const list = rearList.map((d, idx) => {
+        let name = `Lente ${idx + 1}`;
+        const l = d.label.toLowerCase();
+        if (l.includes('0') || l.includes('main') || l.includes('principal') || l.includes('1x')) {
+          name = `Lente ${idx + 1} (Principal 1x)`;
+        } else if (l.includes('ultra') || l.includes('wide')) {
+          name = `Lente ${idx + 1} (Gran Angular)`;
+        } else if (d.label && d.label.length < 25) {
+          name = d.label;
+        }
+        return { id: d.deviceId, label: name };
+      });
+      setCameras(list);
+
+      // Align cameraIndex with current active stream
+      if (track) {
+        const activeSettings = track.getSettings?.();
+        if (activeSettings?.deviceId) {
+          const matchIdx = list.findIndex((c) => c.id === activeSettings.deviceId);
+          if (matchIdx !== -1) setCameraIndex(matchIdx);
+        }
+      }
     } catch {}
   }, [requestWakeLock]);
 
@@ -980,8 +1031,16 @@ function QrScannerView({
     const track = currentStreamRef.current.getVideoTracks()[0];
     if (track && typeof (track as any).applyConstraints === 'function') {
       try {
-        const capabilities = (track as any).getCapabilities?.() || {};
-        if (capabilities.focusMode?.includes('continuous')) {
+        const caps = (track as any).getCapabilities?.() || {};
+        // Trigger hardware autofocus sweep
+        if (caps.focusMode?.includes('single-shot')) {
+          await (track as any).applyConstraints({ advanced: [{ focusMode: 'single-shot' }] });
+          setTimeout(() => {
+            if (caps.focusMode?.includes('continuous')) {
+              void (track as any).applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+            }
+          }, 350);
+        } else if (caps.focusMode?.includes('continuous')) {
           await (track as any).applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
         }
       } catch {}
@@ -995,18 +1054,38 @@ function QrScannerView({
     }
     const nextIdx = (cameraIndex + 1) % cameras.length;
     setCameraIndex(nextIdx);
-    await startCamera(cameras[nextIdx].id);
+    const chosenId = cameras[nextIdx].id;
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('quiropraxia_preferred_cam', chosenId);
+    }
+    await startCamera(chosenId);
   }, [cameraIndex, cameras, startCamera]);
 
-  const toggleTorch = useCallback(async () => {
-    if (!scannerRef.current) return;
-    try {
-      await scannerRef.current.toggleFlash();
-      setFlashOn(scannerRef.current.isFlashOn());
-    } catch (flashErr) {
-      console.warn('Flash error:', flashErr);
+  const toggleZoom = useCallback(async () => {
+    if (!currentStreamRef.current) return;
+    const track = currentStreamRef.current.getVideoTracks()[0];
+    if (track && typeof (track as any).applyConstraints === 'function') {
+      try {
+        const caps = (track as any).getCapabilities?.() || {};
+        const maxZ = caps.zoom?.max || 2;
+        const nextZoom = zoom === 1 ? Math.min(2, maxZ) : 1;
+        await (track as any).applyConstraints({ advanced: [{ zoom: nextZoom }] });
+        setZoom(nextZoom);
+      } catch {}
     }
-  }, []);
+  }, [zoom]);
+
+  const toggleTorch = useCallback(async () => {
+    if (!currentStreamRef.current) return;
+    const track = currentStreamRef.current.getVideoTracks()[0];
+    if (track && typeof (track as any).applyConstraints === 'function') {
+      try {
+        const nextState = !flashOn;
+        await (track as any).applyConstraints({ advanced: [{ torch: nextState }] });
+        setFlashOn(nextState);
+      } catch {}
+    }
+  }, [flashOn]);
 
   useEffect(() => {
     const context = document.modelContext;
@@ -1034,81 +1113,79 @@ function QrScannerView({
     return () => lifecycle.abort();
   }, [startCamera]);
 
+  // Bind video stream whenever camera is opened
   useEffect(() => {
-    if (!cameraOpen || !videoRef.current || !currentStreamRef.current) return;
-    const video = videoRef.current;
-    const stream = currentStreamRef.current;
+    if (cameraOpen && videoRef.current && currentStreamRef.current) {
+      const video = videoRef.current;
+      video.srcObject = currentStreamRef.current;
+      video.setAttribute('playsinline', 'true');
+      video.setAttribute('webkit-playsinline', 'true');
+      video.muted = true;
+      video.autoplay = true;
+      void video.play().catch(() => {});
+    }
+  }, [cameraOpen]);
 
-    video.srcObject = stream;
-    video.setAttribute('playsinline', 'true');
-    video.setAttribute('webkit-playsinline', 'true');
-    video.muted = true;
-    video.autoplay = true;
+  // Continuous scanning loop (NEVER stops the camera stream or turns the video black)
+  useEffect(() => {
+    if (!cameraOpen) return;
+    let cancelled = false;
 
-    let active = true;
+    let detectorInstance: any = null;
+    if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
+      try {
+        detectorInstance = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
+      } catch {}
+    }
 
-    void video
-      .play()
-      .then(() => {
-        if (!active) return;
+    async function scanFrame(): Promise<string | null> {
+      const vid = videoRef.current;
+      if (!vid || vid.readyState < 2 || vid.videoWidth === 0) return null;
+
+      // 1. Hardware accelerated native BarcodeDetector (instant on Android Chrome)
+      if (detectorInstance) {
         try {
-          QrScanner.WORKER_PATH = '/qr-scanner-worker.min.js';
+          const codes = await detectorInstance.detect(vid);
+          if (codes && codes.length > 0) {
+            return codes[0].rawValue || codes[0].data || null;
+          }
         } catch {}
+      }
 
-        const instance = new QrScanner(
-          video,
-          (scanResult) => {
-            const raw = typeof scanResult === 'string' ? scanResult : scanResult?.data;
-            if (raw && !busyRef.current) {
-              // Automatic instant scan WITHOUT pausing video (never freezes or turns dark)
-              void registerQr(raw);
-            }
-          },
-          {
-            preferredCamera: 'environment',
-            highlightScanRegion: false,
-            highlightCodeOutline: true,
-            maxScansPerSecond: 15,
-            returnDetailedScanResult: true,
-            calculateScanRegion: (vid) => {
-              const w = vid.videoWidth || 640;
-              const h = vid.videoHeight || 480;
-              return {
-                x: 0,
-                y: 0,
-                width: w,
-                height: h,
-                downScaledWidth: Math.min(w, 800),
-                downScaledHeight: Math.min(h, 800),
-              };
-            },
-          },
-        );
-
-        scannerRef.current = instance;
-
-        void instance.start().then(async () => {
-          try {
-            const flashAvailable = await instance.hasFlash();
-            setHasFlash(flashAvailable);
-          } catch {}
+      // 2. QrScanner.scanImage fallback
+      try {
+        const res = await QrScanner.scanImage(vid, {
+          returnDetailedScanResult: true,
+          alsoTryWithoutScanRegion: true,
         });
-      })
-      .catch((playErr) => {
-        console.error('Video play error:', playErr);
-      });
+        return typeof res === 'string' ? res : res?.data || null;
+      } catch {
+        return null;
+      }
+    }
+
+    const interval = setInterval(async () => {
+      if (cancelled || busyRef.current) return;
+      try {
+        const raw = await scanFrame();
+        if (raw && !busyRef.current && !cancelled) {
+          try {
+            if (typeof navigator !== 'undefined' && navigator.vibrate) {
+              navigator.vibrate([60, 40, 60]);
+            }
+          } catch {}
+          void registerQr(raw);
+        }
+      } catch {}
+    }, 90);
 
     return () => {
-      active = false;
-      try {
-        scannerRef.current?.stop();
-        scannerRef.current?.destroy();
-        scannerRef.current = null;
-      } catch {}
+      cancelled = true;
+      clearInterval(interval);
     };
   }, [cameraOpen, registerQr]);
 
-  // Cleanup on unmount
+  // Cleanup only on unmount
   useEffect(() => {
     return () => {
       stopCamera();
@@ -1158,6 +1235,17 @@ function QrScannerView({
                   <p className="text-xs sm:text-sm font-black uppercase tracking-[0.16em] text-cyan-300">Cámara HD Activa</p>
                 </div>
                 <div className="flex items-center gap-2">
+                  {supportsZoom && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void toggleZoom()}
+                      className={`h-8 rounded-lg px-2.5 text-xs font-bold border-white/20 ${zoom > 1 ? 'bg-cyan-400 text-slate-950 font-black' : 'bg-white/10 text-white'}`}
+                      title="Zoom 2x para enfocar a distancia"
+                    >
+                      {zoom > 1 ? 'Zoom 2x' : 'Zoom 1x'}
+                    </Button>
+                  )}
                   {hasFlash && (
                     <Button
                       size="sm"
@@ -1174,21 +1262,24 @@ function QrScannerView({
                       variant="outline"
                       onClick={() => void switchCamera()}
                       className="h-8 rounded-lg px-2.5 text-xs font-bold border-white/20 bg-white/10 text-white hover:bg-white/20"
+                      title="Cambiar lente (1x Principal o Gran Angular)"
                     >
-                      <SwitchCamera className="size-3.5 mr-1" /> Lente
+                      <SwitchCamera className="size-3.5 mr-1" />
+                      {cameras[cameraIndex]?.label || `Lente ${cameraIndex + 1}`}
                     </Button>
                   )}
                 </div>
               </div>
               <h2 className="text-2xl sm:text-3xl font-black">Apunta al QR del paciente</h2>
-              <p className="text-xs text-white/60 mt-1">Coloca el código QR frente a la cámara (enfoque automático)</p>
+              <p className="text-xs text-white/60 mt-1">Coloca el código QR frente a la cámara (escaneo 100% automático)</p>
               <div
                 onClick={() => void triggerRefocus()}
                 className="relative mx-auto mt-3.5 w-full max-w-sm rounded-[1.75rem] overflow-hidden border-2 border-cyan-300/60 bg-black shadow-2xl cursor-pointer"
+                title="Toca para re-enfocar"
               >
                 <video
                   ref={videoRef}
-                  className="w-full max-h-[420px] object-contain mx-auto block"
+                  className="w-full max-h-[420px] object-contain mx-auto block bg-black"
                   autoPlay
                   playsInline
                   muted
@@ -1210,6 +1301,10 @@ function QrScannerView({
                     </div>
                   </div>
                 )}
+              </div>
+              <div className="mt-2.5 flex items-center justify-between text-[11px] text-white/50 px-3">
+                <span>💡 Toca el video para re-enfocar</span>
+                {cameras.length > 1 && <span>Si se ve lejos, pulsa arriba el botón de Lente</span>}
               </div>
               <div className="mt-5 flex items-center justify-center">
                 <Button variant="outline" onClick={stopCamera} className="h-11 rounded-xl border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white px-6 font-bold text-sm">
