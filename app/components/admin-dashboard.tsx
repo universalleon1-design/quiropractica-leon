@@ -196,7 +196,6 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
   const [notifPermission, setNotifPermission] = useState<string>('default');
   const [dismissedAlarms, setDismissedAlarms] = useState<Record<string, boolean>>({});
   const [nowDate, setNowDate] = useState(new Date());
-  const [isLocalhost, setIsLocalhost] = useState(false);
 
   async function refresh() {
     const response = await fetch('/api/admin/dashboard');
@@ -204,11 +203,8 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
   }
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setIsLocalhost(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-      if ('Notification' in window) {
-        setNotifPermission(Notification.permission);
-      }
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotifPermission(Notification.permission);
     }
     const timer = setInterval(() => {
       setNowDate(new Date());
@@ -425,18 +421,6 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
             )}
           </div>
         </header>
-
-        {isLocalhost && (
-          <div className="bg-amber-500/15 border-b border-amber-500/30 px-4 py-2.5 sm:px-7 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm text-amber-950 font-medium">
-            <div className="flex items-center gap-2">
-              <span className="text-base shrink-0">💻</span>
-              <div>
-                <span className="font-black text-amber-950">MODO LOCAL (Esta PC):</span>{' '}
-                Estás en <code className="bg-amber-200/80 px-1 py-0.5 rounded text-amber-950 font-bold">localhost</code>. Los pacientes que registres o borres aquí se guardan en el disco de tu PC. Tu celular está conectado a la base de datos de <b className="font-black">Cloudflare Workers</b>. Para que tu PC y tu celular compartan exactamente los mismos pacientes, entra a tu enlace de Workers desde esta PC o usa "Exportar / Importar" en la pestaña Pacientes.
-              </div>
-            </div>
-          </div>
-        )}
 
         {activeAlerts.length > 0 && (
           <div className="bg-amber-500 text-slate-950 px-4 py-2.5 sm:px-7 flex flex-wrap items-center justify-between gap-2 shadow-sm border-b border-amber-600 animate-in fade-in slide-in-from-top-2">
