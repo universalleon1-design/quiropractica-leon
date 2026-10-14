@@ -1202,7 +1202,7 @@ function QrScannerView({
   return (
     <div ref={containerRef} className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
       <Card className="overflow-hidden rounded-[2rem] border-0 bg-slate-950 text-white shadow-xl">
-        <CardContent className="relative grid min-h-[620px] place-items-center p-6 text-center sm:p-9">
+        <CardContent className="relative grid min-h-[520px] sm:min-h-[620px] place-items-center p-3.5 sm:p-9 text-center overflow-hidden">
           {result ? (
             <div className="w-full max-w-lg">
               <span className={`mx-auto grid size-24 place-items-center rounded-full ${result.alreadyRegistered ? 'bg-amber-300 text-amber-950' : 'bg-emerald-300 text-emerald-950'}`}>
@@ -1228,22 +1228,22 @@ function QrScannerView({
               </Button>
             </div>
           ) : cameraOpen ? (
-            <div className="w-full max-w-lg">
-              <div className="flex items-center justify-between mb-3 px-1">
-                <div className="flex items-center gap-2">
-                  <span className="size-2.5 rounded-full bg-emerald-400 animate-ping" />
-                  <p className="text-xs sm:text-sm font-black uppercase tracking-[0.16em] text-cyan-300">Cámara HD Activa</p>
+            <div className="w-full max-w-md mx-auto">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3 px-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="size-2 rounded-full bg-emerald-400 animate-ping" />
+                  <p className="text-xs font-black uppercase tracking-wider text-cyan-300">Cámara Activa</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-1.5">
                   {supportsZoom && (
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => void toggleZoom()}
-                      className={`h-8 rounded-lg px-2.5 text-xs font-bold border-white/20 ${zoom > 1 ? 'bg-cyan-400 text-slate-950 font-black' : 'bg-white/10 text-white'}`}
-                      title="Zoom 2x para enfocar a distancia"
+                      className={`h-7 sm:h-8 rounded-lg px-2 text-xs font-bold border-white/20 ${zoom > 1 ? 'bg-cyan-400 text-slate-950 font-black' : 'bg-white/10 text-white'}`}
+                      title="Zoom 2x"
                     >
-                      {zoom > 1 ? 'Zoom 2x' : 'Zoom 1x'}
+                      {zoom > 1 ? '2x' : '1x'}
                     </Button>
                   )}
                   {hasFlash && (
@@ -1251,9 +1251,9 @@ function QrScannerView({
                       size="sm"
                       variant="outline"
                       onClick={() => void toggleTorch()}
-                      className={`h-8 rounded-lg px-2.5 text-xs font-bold border-white/20 ${flashOn ? 'bg-amber-400 text-slate-950 font-black' : 'bg-white/10 text-white'}`}
+                      className={`h-7 sm:h-8 rounded-lg px-2 text-xs font-bold border-white/20 ${flashOn ? 'bg-amber-400 text-slate-950 font-black' : 'bg-white/10 text-white'}`}
                     >
-                      <Zap className="size-3.5 mr-1" /> {flashOn ? 'Luz ON' : 'Linterna'}
+                      <Zap className="size-3 mr-1" /> {flashOn ? 'Luz ON' : 'Luz'}
                     </Button>
                   )}
                   {cameras.length > 1 && (
@@ -1261,32 +1261,32 @@ function QrScannerView({
                       size="sm"
                       variant="outline"
                       onClick={() => void switchCamera()}
-                      className="h-8 rounded-lg px-2.5 text-xs font-bold border-white/20 bg-white/10 text-white hover:bg-white/20"
+                      className="h-7 sm:h-8 rounded-lg px-2 text-xs font-bold border-white/20 bg-white/10 text-white hover:bg-white/20"
                       title="Cambiar lente (1x Principal o Gran Angular)"
                     >
-                      <SwitchCamera className="size-3.5 mr-1" />
-                      {cameras[cameraIndex]?.label || `Lente ${cameraIndex + 1}`}
+                      <SwitchCamera className="size-3 mr-1" />
+                      {cameras[cameraIndex]?.label ? (cameras[cameraIndex].label.includes('Principal') ? 'Lente 1x' : 'Gran Angular') : `Lente ${cameraIndex + 1}`}
                     </Button>
                   )}
                 </div>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-black">Apunta al QR del paciente</h2>
-              <p className="text-xs text-white/60 mt-1">Coloca el código QR frente a la cámara (escaneo 100% automático)</p>
+              <h2 className="text-xl sm:text-2xl font-black">Apunta al QR del paciente</h2>
+              <p className="text-xs text-white/60 mt-0.5">Escaneo 100% automático en pantalla</p>
               <div
                 onClick={() => void triggerRefocus()}
-                className="relative mx-auto mt-3.5 w-full max-w-sm rounded-[1.75rem] overflow-hidden border-2 border-cyan-300/60 bg-black shadow-2xl cursor-pointer"
+                className="relative mx-auto mt-3 w-full max-w-[340px] aspect-square rounded-2xl sm:rounded-[1.75rem] overflow-hidden border-2 border-cyan-300/60 bg-black shadow-2xl cursor-pointer"
                 title="Toca para re-enfocar"
               >
                 <video
                   ref={videoRef}
-                  className="w-full max-h-[420px] object-contain mx-auto block bg-black"
+                  className="w-full h-full object-cover mx-auto block bg-black"
                   autoPlay
                   playsInline
                   muted
                 />
                 {/* Visual scan frame guide with clean corner brackets */}
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6">
-                  <div className="w-full h-full max-w-[240px] max-h-[240px] rounded-2xl relative">
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-3 sm:p-4">
+                  <div className="w-full h-full max-w-[200px] max-h-[200px] rounded-2xl relative">
                     <span className="absolute top-0 left-0 size-6 border-t-[3px] border-l-[3px] border-cyan-300 rounded-tl-xl" />
                     <span className="absolute top-0 right-0 size-6 border-t-[3px] border-r-[3px] border-cyan-300 rounded-tr-xl" />
                     <span className="absolute bottom-0 left-0 size-6 border-b-[3px] border-l-[3px] border-cyan-300 rounded-bl-xl" />
@@ -1302,12 +1302,12 @@ function QrScannerView({
                   </div>
                 )}
               </div>
-              <div className="mt-2.5 flex items-center justify-between text-[11px] text-white/50 px-3">
-                <span>💡 Toca el video para re-enfocar</span>
-                {cameras.length > 1 && <span>Si se ve lejos, pulsa arriba el botón de Lente</span>}
+              <div className="mt-2.5 flex flex-col items-center gap-1 text-[11px] text-white/50 px-2 text-center">
+                <span>💡 Toca el video para re-enfocar si está borroso</span>
+                {cameras.length > 1 && <span>Si la imagen se ve lejos, pulsa arriba el botón de Lente</span>}
               </div>
-              <div className="mt-5 flex items-center justify-center">
-                <Button variant="outline" onClick={stopCamera} className="h-11 rounded-xl border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white px-6 font-bold text-sm">
+              <div className="mt-4 flex items-center justify-center">
+                <Button variant="outline" onClick={stopCamera} className="h-10 rounded-xl border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white px-6 font-bold text-sm">
                   Cerrar cámara
                 </Button>
               </div>
@@ -1333,10 +1333,10 @@ function QrScannerView({
             </div>
           )}
           {error && (
-            <div role="alert" className="absolute bottom-5 inset-x-6 mx-auto max-w-md rounded-2xl bg-red-950/90 border border-red-500/50 p-4 text-xs sm:text-sm font-semibold text-red-100 shadow-2xl backdrop-blur-md text-left space-y-1">
+            <div role="alert" className="absolute bottom-3 inset-x-3 sm:inset-x-6 mx-auto max-w-md rounded-2xl bg-red-950/95 border border-red-500/50 p-3.5 text-xs sm:text-sm font-semibold text-red-100 shadow-2xl backdrop-blur-md text-left space-y-1">
               <div className="flex items-center justify-between text-red-300 font-bold">
                 <span>Aviso de cámara</span>
-                <button onClick={() => setError('')} className="text-red-300 hover:text-white text-xs">Cerrar</button>
+                <button onClick={() => setError('')} className="text-red-300 hover:text-white text-xs px-2 py-0.5 rounded bg-white/10">Cerrar</button>
               </div>
               <p className="leading-snug">{error}</p>
             </div>
