@@ -196,6 +196,7 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
   const [notifPermission, setNotifPermission] = useState<string>('default');
   const [dismissedAlarms, setDismissedAlarms] = useState<Record<string, boolean>>({});
   const [nowDate, setNowDate] = useState(new Date());
+  const [isLocalhost, setIsLocalhost] = useState(false);
 
   async function refresh() {
     const response = await fetch('/api/admin/dashboard');
@@ -203,8 +204,11 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
   }
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window) {
-      setNotifPermission(Notification.permission);
+    if (typeof window !== 'undefined') {
+      setIsLocalhost(window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+      if ('Notification' in window) {
+        setNotifPermission(Notification.permission);
+      }
     }
     const timer = setInterval(() => {
       setNowDate(new Date());
@@ -422,7 +426,7 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
           </div>
         </header>
 
-        {typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && (
+        {isLocalhost && (
           <div className="bg-amber-500/15 border-b border-amber-500/30 px-4 py-2.5 sm:px-7 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm text-amber-950 font-medium">
             <div className="flex items-center gap-2">
               <span className="text-base shrink-0">💻</span>
