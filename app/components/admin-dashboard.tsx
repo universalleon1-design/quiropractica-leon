@@ -942,14 +942,24 @@ function QrScannerView({
     // Request wake lock to prevent phone screen from going dark/sleeping while camera is active
     void requestWakeLock();
 
-    // Enable continuous autofocus on mobile
+    // Enable continuous autofocus & exposure on mobile if supported
     const track = acquiredStream.getVideoTracks()[0];
-    if (track && 'applyConstraints' in track) {
+    if (track && typeof (track as any).getCapabilities === 'function') {
       try {
-        await track.applyConstraints({
-          advanced: [{ focusMode: 'continuous' } as MediaTrackConstraintSet],
-        });
-      } catch {}
+        const capabilities = (track as any).getCapabilities() || {};
+        const advanced: any = {};
+        if (capabilities.focusMode && capabilities.focusMode.includes('continuous')) {
+          advanced.focusMode = 'continuous';
+        }
+        if (capabilities.exposureMode && capabilities.exposureMode.includes('continuous')) {
+          advanced.exposureMode = 'continuous';
+        }
+        if (Object.keys(advanced).length > 0) {
+          await (track as any).applyConstraints({ advanced: [advanced] });
+        }
+      } catch (err) {
+        console.warn('Could not apply continuous focus constraints:', err);
+      }
     }
 
     currentStreamRef.current = acquiredStream;
@@ -964,6 +974,19 @@ function QrScannerView({
       setCameras(videoDevices);
     } catch {}
   }, [requestWakeLock]);
+
+  const triggerRefocus = useCallback(async () => {
+    if (!currentStreamRef.current) return;
+    const track = currentStreamRef.current.getVideoTracks()[0];
+    if (track && typeof (track as any).applyConstraints === 'function') {
+      try {
+        const capabilities = (track as any).getCapabilities?.() || {};
+        if (capabilities.focusMode?.includes('continuous')) {
+          await (track as any).applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+        }
+      } catch {}
+    }
+  }, []);
 
   const switchCamera = useCallback(async () => {
     if (cameras.length <= 1) {
@@ -1043,20 +1066,20 @@ function QrScannerView({
           },
           {
             preferredCamera: 'environment',
-            highlightScanRegion: true,
+            highlightScanRegion: false,
             highlightCodeOutline: true,
             maxScansPerSecond: 15,
             returnDetailedScanResult: true,
             calculateScanRegion: (vid) => {
-              const minDim = Math.min(vid.videoWidth || 640, vid.videoHeight || 480);
-              const size = Math.round(minDim * 0.75);
+              const w = vid.videoWidth || 640;
+              const h = vid.videoHeight || 480;
               return {
-                x: Math.round(((vid.videoWidth || 640) - size) / 2),
-                y: Math.round(((vid.videoHeight || 480) - size) / 2),
-                width: size,
-                height: size,
-                downScaledWidth: Math.min(size, 600),
-                downScaledHeight: Math.min(size, 600),
+                x: 0,
+                y: 0,
+                width: w,
+                height: h,
+                downScaledWidth: Math.min(w, 800),
+                downScaledHeight: Math.min(h, 800),
               };
             },
           },
@@ -1158,11 +1181,26 @@ function QrScannerView({
                 </div>
               </div>
               <h2 className="text-2xl sm:text-3xl font-black">Apunta al QR del paciente</h2>
-              <div className="relative mx-auto mt-4 aspect-[4/5] max-h-[430px] overflow-hidden rounded-[1.75rem] border-2 border-cyan-300/50 bg-black shadow-inner">
-                <video ref={videoRef} className="h-full w-full object-cover" autoPlay playsInline muted />
-                {/* Visual scan frame guide */}
-                <div className="pointer-events-none absolute inset-0 grid place-items-center">
-                  <div className="size-56 sm:size-64 rounded-2xl border-2 border-dashed border-cyan-400/70 bg-cyan-400/5 animate-pulse" />
+              <p className="text-xs text-white/60 mt-1">Coloca el código QR frente a la cámara (enfoque automático)</p>
+              <div
+                onClick={() => void triggerRefocus()}
+                className="relative mx-auto mt-3.5 w-full max-w-sm rounded-[1.75rem] overflow-hidden border-2 border-cyan-300/60 bg-black shadow-2xl cursor-pointer"
+              >
+                <video
+                  ref={videoRef}
+                  className="w-full max-h-[420px] object-contain mx-auto block"
+                  autoPlay
+                  playsInline
+                  muted
+                />
+                {/* Visual scan frame guide with clean corner brackets */}
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6">
+                  <div className="w-full h-full max-w-[240px] max-h-[240px] rounded-2xl relative">
+                    <span className="absolute top-0 left-0 size-6 border-t-[3px] border-l-[3px] border-cyan-300 rounded-tl-xl" />
+                    <span className="absolute top-0 right-0 size-6 border-t-[3px] border-r-[3px] border-cyan-300 rounded-tr-xl" />
+                    <span className="absolute bottom-0 left-0 size-6 border-b-[3px] border-l-[3px] border-cyan-300 rounded-bl-xl" />
+                    <span className="absolute bottom-0 right-0 size-6 border-b-[3px] border-r-[3px] border-cyan-300 rounded-br-xl" />
+                  </div>
                 </div>
                 {processing && (
                   <div className="absolute inset-0 grid place-items-center bg-slate-950/85 backdrop-blur-xs">
