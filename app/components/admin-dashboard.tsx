@@ -422,6 +422,18 @@ export function AdminDashboard({ user }: { user: { name: string; email: string }
           </div>
         </header>
 
+        {typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && (
+          <div className="bg-amber-500/15 border-b border-amber-500/30 px-4 py-2.5 sm:px-7 flex flex-wrap items-center justify-between gap-3 text-xs sm:text-sm text-amber-950 font-medium">
+            <div className="flex items-center gap-2">
+              <span className="text-base shrink-0">💻</span>
+              <div>
+                <span className="font-black text-amber-950">MODO LOCAL (Esta PC):</span>{' '}
+                Estás en <code className="bg-amber-200/80 px-1 py-0.5 rounded text-amber-950 font-bold">localhost</code>. Los pacientes que registres o borres aquí se guardan en el disco de tu PC. Tu celular está conectado a la base de datos de <b className="font-black">Cloudflare Workers</b>. Para que tu PC y tu celular compartan exactamente los mismos pacientes, entra a tu enlace de Workers desde esta PC o usa "Exportar / Importar" en la pestaña Pacientes.
+              </div>
+            </div>
+          </div>
+        )}
+
         {activeAlerts.length > 0 && (
           <div className="bg-amber-500 text-slate-950 px-4 py-2.5 sm:px-7 flex flex-wrap items-center justify-between gap-2 shadow-sm border-b border-amber-600 animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center gap-2 text-xs sm:text-sm font-black">
@@ -1630,11 +1642,57 @@ function PatientsView({
 }) {
   const [query, setQuery] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncMsg, setSyncMsg] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filtered = useMemo(
     () => patients.filter((patient) => patient.name.toLowerCase().includes(query.toLowerCase())),
     [patients, query],
   );
+
+  async function handleExport() {
+    try {
+      const res = await fetch('/api/admin/sync');
+      if (!res.ok) throw new Error('Error al exportar');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `respaldo_pacientes_quiropraxia_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('No se pudo descargar la copia de seguridad.');
+    }
+  }
+
+  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSyncing(true);
+    setSyncMsg('Sincronizando pacientes con la base de datos...');
+    try {
+      const text = await file.text();
+      const json = JSON.parse(text);
+      const res = await fetch('/api/admin/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(json),
+      });
+      const resData = (await res.json()) as { error?: string; importedCount?: number };
+      if (!res.ok) throw new Error(resData.error || 'Error al importar');
+      setSyncMsg(`¡Listo! Se sincronizaron ${resData.importedCount || 0} pacientes en la base de datos.`);
+      onDeleted();
+      setTimeout(() => setSyncMsg(''), 5000);
+    } catch (err: unknown) {
+      setSyncMsg((err as Error).message || 'Error al procesar el archivo');
+      setTimeout(() => setSyncMsg(''), 5000);
+    } finally {
+      setSyncing(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
 
   async function handleDelete(id: string) {
     setDeletingId(id);
@@ -1659,8 +1717,44 @@ function PatientsView({
           <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-950">Pacientes</h2>
           <p className="mt-1 text-base text-slate-600 font-medium">Expedientes, sesiones y evolución clínica.</p>
         </div>
-        <Button onClick={onNew} className="h-12 px-5 rounded-xl font-bold text-base shadow-sm"><Plus className="mr-2 size-5" /> Registrar paciente</Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImport}
+            accept=".json,application/json"
+            className="hidden"
+          />
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            className="h-12 px-3.5 rounded-xl font-bold text-sm border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-xs"
+            title="Descargar copia de seguridad de todos los pacientes en JSON"
+          >
+            <Download className="mr-1.5 size-4" /> Exportar (Copia)
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={syncing}
+            className="h-12 px-3.5 rounded-xl font-bold text-sm border-slate-200 bg-white hover:bg-slate-50 text-slate-700 shadow-xs"
+            title="Importar pacientes a la base de datos desde un archivo JSON"
+          >
+            <Upload className="mr-1.5 size-4" /> {syncing ? 'Importando...' : 'Importar a BD'}
+          </Button>
+          <Button onClick={onNew} className="h-12 px-5 rounded-xl font-bold text-base shadow-sm">
+            <Plus className="mr-2 size-5" /> Registrar paciente
+          </Button>
+        </div>
       </div>
+      {syncMsg && (
+        <div className="rounded-2xl bg-cyan-50 border border-cyan-200 p-3.5 text-sm font-bold text-cyan-950 flex items-center justify-between">
+          <span>{syncMsg}</span>
+          <Button variant="ghost" size="sm" onClick={() => setSyncMsg('')} className="h-7 px-2">
+            <X className="size-4" />
+          </Button>
+        </div>
+      )}
       <Card className="rounded-3xl border-0 shadow-sm">
         <CardHeader className="pb-3">
           <div className="relative max-w-md">
