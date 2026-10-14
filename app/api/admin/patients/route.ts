@@ -262,6 +262,114 @@ export async function POST(request: Request) {
     }
 
     await env.DB.batch(statements);
+
+    // Auto-mirror to Cloudflare Workers cloud DB if request comes from local dev
+    const host = request.headers.get('host') || '';
+    if (host.includes('localhost') || host.includes('127.0.0.1')) {
+      void (async () => {
+        try {
+          const syncPayload = {
+            patients: [
+              {
+                id: patientId,
+                first_name: firstName,
+                last_name: lastName,
+                search_name: normalizeSearch(`${firstName} ${lastName}`),
+                dni: body.dni?.trim() || null,
+                address: body.address?.trim() || null,
+                occupation: body.occupation?.trim() || null,
+                birth_date: body.birthDate || null,
+                sex: body.sex || null,
+                phone: body.phone?.trim() || null,
+                pin_hash: await hashPin(pin),
+                qr_token: qrToken,
+                qr_issued_at: now,
+                created_at: now,
+              },
+            ],
+            anamnesis: [
+              {
+                id: makeId('anamnesis'),
+                patient_id: patientId,
+                evaluation_date: body.evaluationDate || today,
+                dni: body.dni?.trim() || null,
+                age: body.age ? Number(body.age) : null,
+                birth_date: body.birthDate || null,
+                weight_kg: weight,
+                height_cm: height,
+                address: body.address?.trim() || null,
+                occupation: body.occupation?.trim() || null,
+                main_complaint: body.mainComplaint?.trim() || null,
+                pain_duration_hours: body.painDurationHours?.trim() || null,
+                pain_level: body.painLevel ? Number(body.painLevel) : null,
+                general_health: body.generalHealth?.trim() || null,
+                sleep_hours: body.sleepHours?.trim() || null,
+                pregnancy_status: body.pregnancyStatus?.trim() || null,
+                medications: body.medications?.trim() || null,
+                spine_inclination: body.spineInclination?.trim() || null,
+                spine_rotation: body.spineRotation?.trim() || null,
+                spine_extension: body.spineExtension?.trim() || null,
+                iliac: body.iliac?.trim() || null,
+                gait_tiptoes: body.gaitTiptoes?.trim() || null,
+                gait_heels: body.gaitHeels?.trim() || null,
+                prone_position: body.pronePosition?.trim() || null,
+                leg_length: body.legLength?.trim() || null,
+                sacroiliac_pain: body.sacroiliacPain?.trim() || null,
+                cervical_syndrome: body.cervicalSyndrome?.trim() || null,
+                dynamic_palpation: body.dynamicPalpation?.trim() || null,
+                stronger_leg: body.strongerLeg?.trim() || null,
+                static_palpation: body.staticPalpation?.trim() || null,
+                muscle_tension: body.muscleTension?.trim() || null,
+                lumbar_scan: body.lumbarScan?.trim() || null,
+                lumbar_hypomobility: body.lumbarHypomobility?.trim() || null,
+                lumbar_yes_no: body.lumbarYesNo?.trim() || null,
+                thoracic_scan: body.thoracicScan?.trim() || null,
+                thoracic_hypomobility: body.thoracicHypomobility?.trim() || null,
+                thoracic_listing_level: body.thoracicListingLevel?.trim() || null,
+                cervical_c2_c7_rotation: body.cervicalC2C7Rotation?.trim() || null,
+                cervical_listing_level: body.cervicalListingLevel?.trim() || null,
+                cervical_series: body.cervicalSeries?.trim() || null,
+                clinical_notes: body.clinicalNotes?.trim() || null,
+                created_at: now,
+              },
+            ],
+            packages: [
+              {
+                id: makeId('package'),
+                patient_id: patientId,
+                total_sessions: totalSessions,
+                used_sessions: usedSessions,
+                sessions_per_week: Math.max(1, Math.min(7, Number(body.sessionsPerWeek) || 1)),
+                start_date: appointmentDate,
+                total_amount_cents: Math.round((Number(body.totalAmount) || 0) * 100),
+                created_at: now,
+              },
+            ],
+            appointments: [
+              {
+                id: apptId,
+                patient_id: patientId,
+                appointment_date: appointmentDate,
+                start_time: apptTime,
+                duration_minutes: 45,
+                status: startsToday ? 'completed' : 'scheduled',
+                reason: startsToday ? '1ra sesión de ajuste realizada al registrarse' : null,
+                created_at: now,
+              },
+            ],
+          };
+
+          await fetch('https://quiropractica-leon.universalleon1.workers.dev/api/admin/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(syncPayload),
+          });
+        } catch (syncErr) {
+          console.warn('Auto-mirror to cloud warning:', syncErr);
+        }
+      })();
+    }
+
     return NextResponse.json({
       patientId,
       firstName,
@@ -316,6 +424,29 @@ export async function PATCH(request: Request) {
       ).bind(makeId('audit'), user.userId, body.patientId, now),
     ]);
 
+    // Auto-mirror renew QR to cloud if on localhost
+    const host = request.headers.get('host') || '';
+    if (host.includes('localhost') || host.includes('127.0.0.1')) {
+      void fetch('https://quiropractica-leon.universalleon1.workers.dev/api/admin/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          patients: [
+            {
+              id: body.patientId,
+              first_name: patient.firstName,
+              last_name: patient.lastName,
+              search_name: normalizeSearch(`${patient.firstName} ${patient.lastName}`),
+              pin_hash: '',
+              qr_token: qrToken,
+              qr_issued_at: now,
+              created_at: now,
+            },
+          ],
+        }),
+      }).catch(() => {});
+    }
+
     return NextResponse.json({
       firstName: patient.firstName,
       lastName: patient.lastName,
@@ -358,6 +489,17 @@ export async function DELETE(request: Request) {
       env.DB.prepare('DELETE FROM media_files WHERE patient_id = ?').bind(body.patientId),
       env.DB.prepare('DELETE FROM patients WHERE id = ?').bind(body.patientId),
     ]);
+
+    // Auto-mirror delete to cloud if on localhost
+    const host = request.headers.get('host') || '';
+    if (host.includes('localhost') || host.includes('127.0.0.1')) {
+      void fetch('https://quiropractica-leon.universalleon1.workers.dev/api/admin/patients', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ patientId: body.patientId }),
+      }).catch(() => {});
+    }
+
     return NextResponse.json({ deleted: true });
   } catch (error) {
     console.error('patient.delete.failed', error);
