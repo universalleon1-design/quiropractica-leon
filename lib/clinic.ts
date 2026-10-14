@@ -61,36 +61,47 @@ export function makePatientQrValue(token: string) {
 export function readPatientQrToken(value: string): string | null {
   if (!value || typeof value !== 'string') return null;
   const trimmed = value.trim();
+  if (!trimmed) return null;
 
   // 1. Direct QLU prefix: QLU-PACIENTE:<token>
   if (trimmed.startsWith(PATIENT_QR_PREFIX)) {
     const token = trimmed.slice(PATIENT_QR_PREFIX.length).trim();
-    if (/^[A-Za-z0-9_-]{20,128}$/.test(token)) return token;
+    if (token) return token;
   }
 
-  // 2. From URL parameter: ?token=... or ?qr=... or ?scan=...
+  // 2. From URL parameter: ?token=... or ?qr=... or ?scan=... or ?id=... or ?dni=...
   if (trimmed.includes('://') || trimmed.startsWith('/') || trimmed.includes('?')) {
     try {
       const url = new URL(trimmed, 'http://localhost');
-      const param = url.searchParams.get('token') || url.searchParams.get('qr') || url.searchParams.get('scan');
+      const param =
+        url.searchParams.get('token') ||
+        url.searchParams.get('qr') ||
+        url.searchParams.get('scan') ||
+        url.searchParams.get('id') ||
+        url.searchParams.get('dni');
       if (param) {
-        return readPatientQrToken(param);
+        return readPatientQrToken(decodeURIComponent(param));
       }
     } catch {}
   }
 
   // 3. Embedded QLU-PACIENTE inside string/URL
-  const qluMatch = trimmed.match(/QLU-PACIENTE:([A-Za-z0-9_-]{20,128})/);
-  if (qluMatch) {
+  const qluMatch = trimmed.match(/QLU-PACIENTE:([A-Za-z0-9_-]+)/i);
+  if (qluMatch && qluMatch[1]) {
     return qluMatch[1];
   }
 
-  // 4. Raw token (standard base64url or alphanumeric token)
-  if (/^[A-Za-z0-9_-]{24,128}$/.test(trimmed)) {
+  // 4. Patient ID (patient_...)
+  if (trimmed.startsWith('patient_')) {
     return trimmed;
   }
 
-  return null;
+  // 5. Raw token, DNI, phone or alphanumeric identifier (min 3 chars)
+  if (/^[A-Za-z0-9_-]{3,128}$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  return trimmed;
 }
 
 export function timeInLima() {

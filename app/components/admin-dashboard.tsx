@@ -783,12 +783,30 @@ function QrScannerView({
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const busyRef = useRef(false);
   const scannerRef = useRef<QrScanner | null>(null);
   const currentStreamRef = useRef<MediaStream | null>(null);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+
+  const releaseWakeLock = useCallback(async () => {
+    if (wakeLockRef.current) {
+      try {
+        await wakeLockRef.current.release();
+      } catch {}
+      wakeLockRef.current = null;
+    }
+  }, []);
+
+  const requestWakeLock = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && 'wakeLock' in navigator) {
+      try {
+        wakeLockRef.current = await navigator.wakeLock.request('screen');
+      } catch {}
+    }
+  }, []);
 
   const stopCamera = useCallback(() => {
+    void releaseWakeLock();
     if (currentStreamRef.current) {
       for (const track of currentStreamRef.current.getTracks()) {
         try {
@@ -809,7 +827,7 @@ function QrScannerView({
     }
     setCameraOpen(false);
     setFlashOn(false);
-  }, []);
+  }, [releaseWakeLock]);
 
   const registerQr = useCallback(
     async (qrValue: string) => {
@@ -840,22 +858,18 @@ function QrScannerView({
         clearTimeout(timer);
         const isAbort = (requestError as Error).name === 'AbortError';
         const msg = isAbort
-          ? 'Tiempo de espera agotado. Por favor intenta de nuevo.'
+          ? 'Tiempo de espera agotado al conectar con el servidor.'
           : ((requestError as Error).message || 'No se pudo registrar la llegada.');
         setError(msg);
-        setTimeout(() => {
-          if (!result && scannerRef.current) {
-            try {
-              void scannerRef.current.start();
-            } catch {}
-          }
-        }, 2500);
       } finally {
         setProcessing(false);
-        busyRef.current = false;
+        // Wait 1.5s before allowing next scan to prevent double trigger
+        setTimeout(() => {
+          busyRef.current = false;
+        }, 1500);
       }
     },
-    [onRegistered, result, stopCamera],
+    [onRegistered, stopCamera],
   );
 
   const startCamera = useCallback(async (preferredDeviceId?: string) => {
@@ -878,11 +892,11 @@ function QrScannerView({
     }
 
     if (!navigator?.mediaDevices?.getUserMedia) {
-      setError('Este navegador no tiene acceso a la cámara. Usa Safari en iPhone o Chrome en Android con conexión HTTPS.');
+      setError('Este navegador no tiene acceso a la cámara. Usa Safari en iPhone o Chrome en Android.');
       return;
     }
 
-    // High quality mobile constraints (1280x720 ideal avoids pixelation on Android, ideal environment avoids iOS OverconstrainedError)
+    // High definition 1280x720 ideal constraints: keeps video crystal clear, prevents Android pixelation
     const constraintsAttempts: MediaStreamConstraints[] = [
       preferredDeviceId
         ? { video: { deviceId: { exact: preferredDeviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }
@@ -901,7 +915,6 @@ function QrScannerView({
       } catch (attemptErr) {
         lastErr = attemptErr;
         const errName = (attemptErr as Error)?.name || '';
-        // If explicitly denied permission, do not loop
         if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
           break;
         }
@@ -913,20 +926,23 @@ function QrScannerView({
       const errName = (lastErr as Error)?.name || '';
       if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
         setError(
-          'Permiso de cámara denegado. En iPhone: abre Ajustes > Safari > Cámara y pulsa "Permitir". En Android: pulsa el candado o icono de permisos en la barra del navegador y activa "Cámara".',
+          'Permiso de cámara denegado. En iPhone: abre Ajustes > Safari > Cámara y pulsa "Permitir". En Android: pulsa el candado en la barra de direcciones y activa "Cámara".',
         );
       } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
         setError('No se encontró ninguna cámara disponible en este dispositivo.');
       } else if (errName === 'NotReadableError' || errName === 'TrackStartError') {
-        setError('La cámara está en uso por otra app (WhatsApp, etc.). Ciérrala y reintenta.');
+        setError('La cámara está en uso por otra app. Ciérrala y reintenta.');
       } else {
-        setError('No se pudo activar la cámara en vivo. Puedes pulsar "Tomar Foto QR" para usar la cámara nativa de tu celular.');
+        setError('No se pudo activar la cámara. Revisa los permisos o usa la búsqueda manual a la derecha.');
       }
       setCameraOpen(false);
       return;
     }
 
-    // Try continuous focus on Android Chrome
+    // Request wake lock to prevent phone screen from going dark/sleeping while camera is active
+    void requestWakeLock();
+
+    // Enable continuous autofocus on mobile
     const track = acquiredStream.getVideoTracks()[0];
     if (track && 'applyConstraints' in track) {
       try {
@@ -947,7 +963,7 @@ function QrScannerView({
         .map((d, idx) => ({ id: d.deviceId, label: d.label || `Cámara ${idx + 1}` }));
       setCameras(videoDevices);
     } catch {}
-  }, []);
+  }, [requestWakeLock]);
 
   const switchCamera = useCallback(async () => {
     if (cameras.length <= 1) {
@@ -968,39 +984,6 @@ function QrScannerView({
       console.warn('Flash error:', flashErr);
     }
   }, []);
-
-  const handleFileScan = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      setProcessing(true);
-      setError('');
-      try {
-        try {
-          QrScanner.WORKER_PATH = '/qr-scanner-worker.min.js';
-        } catch {}
-
-        const scanResult = await QrScanner.scanImage(file, {
-          returnDetailedScanResult: true,
-          alsoTryWithoutScanRegion: true,
-        });
-
-        const raw = typeof scanResult === 'string' ? scanResult : scanResult?.data;
-        if (raw) {
-          await registerQr(raw);
-        } else {
-          setError('No se detectó un código QR legible en la foto. Asegúrate de enfocar con claridad el código.');
-        }
-      } catch (err) {
-        console.error('File scan error:', err);
-        setError('No se pudo leer el código QR de la foto. Toma la foto de más cerca y con buena iluminación.');
-      } finally {
-        setProcessing(false);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-      }
-    },
-    [registerQr],
-  );
 
   useEffect(() => {
     const context = document.modelContext;
@@ -1054,9 +1037,7 @@ function QrScannerView({
           (scanResult) => {
             const raw = typeof scanResult === 'string' ? scanResult : scanResult?.data;
             if (raw && !busyRef.current) {
-              try {
-                instance.pause();
-              } catch {}
+              // Automatic instant scan WITHOUT pausing video (never freezes or turns dark)
               void registerQr(raw);
             }
           },
@@ -1064,7 +1045,7 @@ function QrScannerView({
             preferredCamera: 'environment',
             highlightScanRegion: true,
             highlightCodeOutline: true,
-            maxScansPerSecond: 12,
+            maxScansPerSecond: 15,
             returnDetailedScanResult: true,
             calculateScanRegion: (vid) => {
               const minDim = Math.min(vid.videoWidth || 640, vid.videoHeight || 480);
@@ -1120,16 +1101,6 @@ function QrScannerView({
 
   return (
     <div ref={containerRef} className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-      {/* Hidden file input for native camera capture fallback */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={(e) => void handleFileScan(e)}
-      />
-
       <Card className="overflow-hidden rounded-[2rem] border-0 bg-slate-950 text-white shadow-xl">
         <CardContent className="relative grid min-h-[620px] place-items-center p-6 text-center sm:p-9">
           {result ? (
@@ -1202,12 +1173,9 @@ function QrScannerView({
                   </div>
                 )}
               </div>
-              <div className="mt-5 flex flex-wrap items-center justify-center gap-2.5">
-                <Button variant="outline" onClick={stopCamera} className="h-11 rounded-xl border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white px-5 font-bold text-sm">
+              <div className="mt-5 flex items-center justify-center">
+                <Button variant="outline" onClick={stopCamera} className="h-11 rounded-xl border-white/20 bg-transparent text-white hover:bg-white/10 hover:text-white px-6 font-bold text-sm">
                   Cerrar cámara
-                </Button>
-                <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="h-11 rounded-xl border-white/20 bg-white/10 text-white hover:bg-white/20 px-5 font-bold text-sm">
-                  <Upload className="size-4 mr-2 text-cyan-300" /> Tomar foto con celular
                 </Button>
               </div>
             </div>
@@ -1219,21 +1187,14 @@ function QrScannerView({
               <p className="mt-8 text-sm font-bold uppercase tracking-[0.18em] text-cyan-300">Control de asistencia</p>
               <h2 className="mt-3 text-4xl font-black tracking-tight">Escanea la tarjeta del paciente</h2>
               <p className="mx-auto mt-4 max-w-md text-base leading-7 text-white/65">
-                Apunta con la cámara al código QR de la tarjeta digital o impresa. El paciente también puede escanearlo con la cámara de su propio celular.
+                Apunta con la cámara al código QR de la tarjeta digital o impresa. El escaneo es 100% automático al colocar el código frente a la cámara.
               </p>
-              <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <div className="mt-8 flex justify-center">
                 <Button
                   onClick={() => void startCamera()}
-                  className="h-14 w-full sm:w-auto rounded-2xl bg-cyan-300 px-8 text-base font-black text-slate-950 hover:bg-cyan-200 shadow-lg shadow-cyan-300/25"
+                  className="h-14 w-full sm:w-auto rounded-2xl bg-cyan-300 px-9 text-base font-black text-slate-950 hover:bg-cyan-200 shadow-lg shadow-cyan-300/25"
                 >
-                  <Camera className="size-5 mr-2" /> Abrir cámara en vivo
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="h-14 w-full sm:w-auto rounded-2xl border-white/20 bg-white/10 px-6 text-base font-bold text-white hover:bg-white/20"
-                >
-                  <Upload className="size-5 mr-2 text-cyan-300" /> Tomar foto QR con celular
+                  <Camera className="size-5 mr-2" /> Abrir cámara
                 </Button>
               </div>
             </div>
@@ -1290,33 +1251,51 @@ function QrScannerView({
               </Button>
             </form>
 
-            {manualInput.trim().length > 1 && (
-              <div className="space-y-1.5 max-h-48 overflow-y-auto pt-1 border-t">
-                {patients
-                  .filter((p) =>
-                    p.name.toLowerCase().includes(manualInput.toLowerCase()) ||
-                    (p.phone && p.phone.includes(manualInput))
-                  )
-                  .slice(0, 5)
-                  .map((p) => (
-                    <div
-                      key={p.id}
-                      className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border hover:bg-cyan-50 transition text-xs"
-                    >
-                      <div className="min-w-0 pr-2">
-                        <strong className="block truncate text-slate-900 capitalize font-bold">{p.name}</strong>
-                        <span className="text-[11px] text-muted-foreground">Sesiones: {p.used}/{p.total}</span>
-                      </div>
-                      <Button
-                        size="sm"
-                        disabled={processing || !p.qrValue}
-                        onClick={() => p.qrValue && void registerQr(p.qrValue)}
-                        className="h-8 px-2.5 text-xs font-bold bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg shrink-0"
+            {patients.length === 0 ? (
+              <div className="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900 space-y-1">
+                <strong className="font-bold">0 pacientes en esta base de datos</strong>
+                <p className="text-[11px] text-amber-800 leading-tight">
+                  Para que el QR funcione, el paciente debe estar registrado en este servidor (pestaña <strong>Nuevo Paciente</strong>).
+                </p>
+              </div>
+            ) : (
+              <div className="pt-2 border-t space-y-2">
+                <div className="flex items-center justify-between text-xs text-slate-500 font-bold">
+                  <span>Pacientes en Sistema ({patients.length})</span>
+                  <span className="text-[10px] text-slate-400">Clic en Llegó</span>
+                </div>
+                <div className="space-y-1.5 max-h-56 overflow-y-auto pr-0.5">
+                  {patients
+                    .filter((p) => {
+                      if (!manualInput.trim()) return true;
+                      const q = manualInput.toLowerCase();
+                      return (
+                        p.name.toLowerCase().includes(q) ||
+                        (p.phone && p.phone.includes(q)) ||
+                        p.id.toLowerCase().includes(q)
+                      );
+                    })
+                    .slice(0, manualInput.trim() ? 8 : 4)
+                    .map((p) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/80 hover:bg-cyan-50 transition text-xs"
                       >
-                        Llegó
-                      </Button>
-                    </div>
-                  ))}
+                        <div className="min-w-0 pr-2">
+                          <strong className="block truncate text-slate-900 capitalize font-bold">{p.name}</strong>
+                          <span className="text-[11px] text-slate-500">Sesiones: {p.used}/{p.total}</span>
+                        </div>
+                        <Button
+                          size="sm"
+                          disabled={processing}
+                          onClick={() => void registerQr(p.qrValue || p.id)}
+                          className="h-7 px-2.5 text-[11px] font-bold bg-cyan-700 hover:bg-cyan-800 text-white rounded-lg shrink-0"
+                        >
+                          Llegó
+                        </Button>
+                      </div>
+                    ))}
+                </div>
               </div>
             )}
           </CardContent>

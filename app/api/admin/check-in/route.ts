@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:workers';
 import { NextResponse } from 'next/server';
 import { getChatGPTUser } from '@/app/chatgpt-auth';
+import { ensureDbInitialized } from '@/db';
 import {
   formatClinicTime,
   makeId,
@@ -20,6 +21,8 @@ export async function POST(request: Request) {
   const user = await getChatGPTUser();
   if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
 
+  await ensureDbInitialized();
+
   const body = (await request.json()) as { qrValue?: string };
   const qrValue = body.qrValue?.trim() ?? '';
 
@@ -38,7 +41,7 @@ export async function POST(request: Request) {
               COALESCE(sp.total_sessions, 0) AS total
        FROM patients p
        LEFT JOIN session_packages sp ON sp.patient_id = p.id
-       WHERE p.qr_token = ?
+       WHERE p.qr_token = ?1 OR p.id = ?1 OR (p.dni IS NOT NULL AND p.dni = ?1) OR (p.phone IS NOT NULL AND p.phone = ?1)
        LIMIT 1`,
     )
       .bind(token)
@@ -46,7 +49,7 @@ export async function POST(request: Request) {
 
     if (!patient) {
       return NextResponse.json(
-        { error: 'El QR está vencido o no corresponde a un paciente.' },
+        { error: 'El paciente no se encontró en la base de datos (código o DNI no registrado).' },
         { status: 404 },
       );
     }

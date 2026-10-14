@@ -1,5 +1,6 @@
 import { env } from 'cloudflare:workers';
 import { NextResponse } from 'next/server';
+import { ensureDbInitialized } from '@/db';
 import {
   formatClinicTime,
   makeId,
@@ -17,6 +18,8 @@ type PatientRecord = {
 
 export async function POST(request: Request) {
   try {
+    await ensureDbInitialized();
+
     const body = (await request.json().catch(() => ({}))) as {
       token?: string;
       qrValue?: string;
@@ -37,7 +40,7 @@ export async function POST(request: Request) {
               COALESCE(sp.total_sessions, 0) AS total
        FROM patients p
        LEFT JOIN session_packages sp ON sp.patient_id = p.id
-       WHERE p.qr_token = ?
+       WHERE p.qr_token = ?1 OR p.id = ?1 OR (p.dni IS NOT NULL AND p.dni = ?1) OR (p.phone IS NOT NULL AND p.phone = ?1)
        LIMIT 1`,
     )
       .bind(token)
