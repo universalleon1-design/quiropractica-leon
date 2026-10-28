@@ -1,9 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import {
-  ArrowLeft,
-  ArrowRight,
   Banknote,
   Check,
   CreditCard,
@@ -58,31 +56,13 @@ export function NewPatientPageView({
   onViewPatients?: () => void;
 }) {
   const today = new Date().toISOString().slice(0, 10);
-  const [step, setStep] = useState<1 | 2>(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<PatientQrResult | null>(null);
 
   const formTopRef = useRef<HTMLDivElement>(null);
 
-  function changeStep(nextStep: 1 | 2) {
-    setStep(nextStep);
-    try {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
-      document.body.scrollTo({ top: 0, behavior: 'smooth' });
-      formTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } catch {}
-  }
-
-  useEffect(() => {
-    try {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      formTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } catch {}
-  }, [step]);
-
-  // Pagina 1: Anamnesis y Evaluacion
+  // Anamnesis y Evaluación
   const [evaluationDate, setEvaluationDate] = useState(today);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -101,15 +81,7 @@ export function NewPatientPageView({
   const [pregnancyTime, setPregnancyTime] = useState('');
   const [medications, setMedications] = useState('');
 
-  // Pagina 2: Postura y Palpacion
-  const [legLengthSide, setLegLengthSide] = useState<'Derecha' | 'Izquierda' | 'Iguales'>('Derecha');
-  const [sacroiliacPain, setSacroiliacPain] = useState<'SI' | 'NO'>('NO');
-  const [sacroiliacSide, setSacroiliacSide] = useState<'Derecho' | 'Izquierdo' | 'Bilateral'>('Derecho');
-  const [cervicalSyndrome, setCervicalSyndrome] = useState<'SI' | 'NO'>('NO');
-  const [dynamicPalpation, setDynamicPalpation] = useState('');
-  const [strongerLeg, setStrongerLeg] = useState<'D' | 'I' | 'Neutro'>('D');
-  const [staticPalpation, setStaticPalpation] = useState('');
-  const [muscleTension, setMuscleTension] = useState('');
+  // Escaneos y Ajustes
   const [lumbarScan, setLumbarScan] = useState('');
   const [lumbarHypomobility, setLumbarHypomobility] = useState('');
   const [lumbarYesNo, setLumbarYesNo] = useState<'SI' | 'NO'>('NO');
@@ -191,7 +163,7 @@ export function NewPatientPageView({
     e.preventDefault();
     if (!firstName.trim() || !lastName.trim()) {
       setError('Por favor ingresa al menos los nombres y apellidos del paciente.');
-      changeStep(1);
+      formTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       return;
     }
 
@@ -224,14 +196,14 @@ export function NewPatientPageView({
       iliac: null,
       gaitTiptoes: null,
       gaitHeels: null,
-      pronePosition: legLengthSide,
-      legLength: legLengthSide,
-      sacroiliacPain: `${sacroiliacPain}${sacroiliacPain === 'SI' ? ` (${sacroiliacSide})` : ''}`,
-      cervicalSyndrome,
-      dynamicPalpation: dynamicPalpation.trim(),
-      strongerLeg,
-      staticPalpation: staticPalpation.trim(),
-      muscleTension: muscleTension.trim(),
+      pronePosition: null,
+      legLength: null,
+      sacroiliacPain: null,
+      cervicalSyndrome: null,
+      dynamicPalpation: null,
+      strongerLeg: null,
+      staticPalpation: null,
+      muscleTension: null,
       lumbarScan: lumbarScan.trim(),
       lumbarHypomobility: lumbarHypomobility.trim(),
       lumbarYesNo,
@@ -303,7 +275,6 @@ export function NewPatientPageView({
   function resetForm() {
     setResult(null);
     setError('');
-    setStep(1);
     setFirstName('');
     setLastName('');
     setDni('');
@@ -414,30 +385,24 @@ export function NewPatientPageView({
   return (
     <div ref={formTopRef} className="space-y-4 scroll-mt-20">
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* ==================== PÁGINA 1 ==================== */}
-        {step === 1 && (
-          <Card className="rounded-2xl border-0 shadow-sm bg-white overflow-hidden">
-            <CardHeader className="py-3 px-4 sm:px-6 border-b bg-slate-50/50">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <span className="grid size-7 place-items-center rounded-lg bg-cyan-700 text-white text-xs font-black shadow-xs">
-                    1 / 2
-                  </span>
-                  <div>
-                    <CardTitle className="text-base sm:text-lg font-black text-slate-900 leading-tight">
-                      Página 1: Ficha de Anamnesis y Evaluación Clínica
-                    </CardTitle>
-                    <p className="text-xs text-muted-foreground hidden sm:block">
-                      Datos personales, biometría, estado de salud, postura y escaneos segmentarios.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0" title="Paso 1 de 2">
-                  <span className="h-1.5 w-6 rounded-full bg-cyan-700" />
-                  <span className="h-1.5 w-2 rounded-full bg-slate-200" />
+        <Card className="rounded-2xl border-0 shadow-sm bg-white overflow-hidden">
+          <CardHeader className="py-3.5 px-4 sm:px-6 border-b bg-slate-50/50">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="grid size-8 place-items-center rounded-xl bg-cyan-700 text-white text-xs font-black shadow-xs">
+                  <UserPlus className="size-4.5" />
+                </span>
+                <div>
+                  <CardTitle className="text-base sm:text-lg font-black text-slate-900 leading-tight">
+                    Ficha de Registro y Consulta Clínica
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground hidden sm:block">
+                    Datos del paciente, estado de salud, escaneos segmentarios, plan de tratamiento y pago.
+                  </p>
                 </div>
               </div>
-            </CardHeader>
+            </div>
+          </CardHeader>
             <CardContent className="p-4 sm:p-5 space-y-4">
               <div>
                 <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-cyan-900 mb-2.5">
@@ -953,161 +918,6 @@ export function NewPatientPageView({
                   />
                 </div>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-3.5 space-y-3">
-                <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-cyan-900">
-                  Evaluación Postural y Miembros Inferiores
-                </h3>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label>POSICIÓN PRONO: LARGO DE LAS PIERNAS ( DERECHA / IZQUIERDA )</Label>
-                    <div className="flex gap-1.5">
-                      {(['Derecha', 'Izquierda', 'Iguales'] as const).map((side) => (
-                        <button
-                          key={side}
-                          type="button"
-                          onClick={() => setLegLengthSide(side)}
-                          className={cn(
-                            'h-10 flex-1 rounded-xl text-xs sm:text-sm font-bold border transition',
-                            legLengthSide === side
-                              ? 'bg-cyan-700 text-white border-cyan-700 shadow-xs'
-                              : 'bg-white hover:bg-slate-50 text-slate-800'
-                          )}
-                        >
-                          {side}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label>SACRO ILÍACO DOLOR: ( SI ) / ( NO )</Label>
-                    <div className="space-y-1.5">
-                      <div className="flex gap-1.5">
-                        {(['SI', 'NO'] as const).map((opt) => (
-                          <button
-                            key={opt}
-                            type="button"
-                            onClick={() => setSacroiliacPain(opt)}
-                            className={cn(
-                              'h-9 flex-1 rounded-lg text-xs sm:text-sm font-black border transition',
-                              sacroiliacPain === opt
-                                ? opt === 'SI'
-                                ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
-                                : 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                                : 'bg-white hover:bg-slate-50 text-slate-800'
-                            )}
-                          >
-                            {opt}
-                          </button>
-                        ))}
-                      </div>
-                      {sacroiliacPain === 'SI' && (
-                        <div className="flex gap-1.5 pt-0.5">
-                          {(['Derecho', 'Izquierdo', 'Bilateral'] as const).map((side) => (
-                            <button
-                              key={side}
-                              type="button"
-                              onClick={() => setSacroiliacSide(side)}
-                              className={cn(
-                                'h-8 flex-1 rounded-lg text-xs font-bold border transition',
-                                sacroiliacSide === side ? 'bg-cyan-700 text-white font-black' : 'bg-white'
-                              )}
-                            >
-                              {side}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label>SÍNDROME CERVICAL: ( SI ) / ( NO )</Label>
-                    <div className="flex gap-1.5">
-                      {(['SI', 'NO'] as const).map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setCervicalSyndrome(opt)}
-                          className={cn(
-                            'h-10 flex-1 rounded-xl text-xs sm:text-sm font-black border transition',
-                            cervicalSyndrome === opt
-                              ? opt === 'SI'
-                                ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
-                                : 'bg-slate-900 text-white border-slate-900 shadow-xs'
-                              : 'bg-white hover:bg-slate-50 text-slate-800'
-                          )}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-3.5 space-y-3">
-                <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-cyan-900">
-                  Palpación y Resistencia
-                </h3>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="dynPalp">PALPACIÓN DINÁMICA</Label>
-                    <Textarea
-                      id="dynPalp"
-                      placeholder="Respuesta al movimiento articular y dinamismo segmentario..."
-                      value={dynamicPalpation}
-                      onChange={(e) => setDynamicPalpation(e.target.value)}
-                      className="min-h-16 rounded-xl bg-white"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="statPalp">PALPACIÓN ESTÁTICA</Label>
-                    <Textarea
-                      id="statPalp"
-                      placeholder="Zonas edematosas, dolor a la presión, desalineaciones..."
-                      value={staticPalpation}
-                      onChange={(e) => setStaticPalpation(e.target.value)}
-                      className="min-h-16 rounded-xl bg-white"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label>PIERNA QUE MÁS RESISTE: DERECHA ( D ) / IZQUIERDA ( I )</Label>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {[
-                        { id: 'D', label: 'Derecha ( D )' },
-                        { id: 'I', label: 'Izquierda ( I )' },
-                        { id: 'Neutro', label: 'Sin diferencia' },
-                      ].map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => setStrongerLeg(item.id as 'D' | 'I' | 'Neutro')}
-                          className={cn(
-                            'h-9 rounded-lg text-xs sm:text-sm font-bold border transition',
-                            strongerLeg === item.id ? 'bg-cyan-700 text-white border-cyan-700 shadow-xs' : 'bg-white hover:bg-slate-50 text-slate-800'
-                          )}
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="muscleTens">TENSIÓN MUSCULAR O SENSIBILIDAD</Label>
-                    <Input
-                      id="muscleTens"
-                      placeholder="Hipertonía, espasmo lumbar, trapecios, etc."
-                      value={muscleTension}
-                      onChange={(e) => setMuscleTension(e.target.value)}
-                      className="h-10 rounded-xl bg-white"
-                    />
-                  </div>
-                </div>
-              </div>
 
               <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-3">
                 <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-slate-900">
@@ -1192,57 +1002,6 @@ export function NewPatientPageView({
                 </div>
               </div>
 
-              {error && (
-                <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm font-medium text-red-800">
-                  {error}
-                </div>
-              )}
-
-              <div className="flex justify-end pt-3 border-t mt-4">
-                <Button
-                  type="button"
-                  onClick={() => {
-                    if (!firstName.trim() || !lastName.trim()) {
-                      setError('Por favor ingresa los nombres y apellidos antes de continuar.');
-                      return;
-                    }
-                    setError('');
-                    changeStep(2);
-                  }}
-                  className="h-12 px-7 rounded-xl font-bold bg-cyan-700 hover:bg-cyan-800 text-white shadow-md text-sm sm:text-base"
-                >
-                  Continuar a Página 2: Plan y Pago <ArrowRight className="ml-2 size-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* ==================== PÁGINA 2 ==================== */}
-        {step === 2 && (
-          <Card className="rounded-2xl border-0 shadow-sm bg-white overflow-hidden">
-            <CardHeader className="py-3 px-4 sm:px-6 border-b bg-slate-50/50">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <span className="grid size-7 place-items-center rounded-lg bg-cyan-700 text-white text-xs font-black shadow-xs">
-                    2 / 2
-                  </span>
-                  <div>
-                    <CardTitle className="text-base sm:text-lg font-black text-slate-900 leading-tight">
-                      Página 2: Evaluación Cervical, Plan de Tratamiento y Pago
-                    </CardTitle>
-                    <p className="text-xs text-muted-foreground hidden sm:block">
-                      Ajuste cervical, serie listada, plan de sesiones y cobro de abono inicial.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0" title="Paso 2 de 2">
-                  <span className="h-1.5 w-2 rounded-full bg-slate-200" />
-                  <span className="h-1.5 w-6 rounded-full bg-cyan-700" />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-5 space-y-3.5">
               <div className="rounded-xl border border-cyan-100 bg-cyan-50/40 p-3.5 space-y-3">
                 <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-cyan-950">
                   Evaluación Cervical
@@ -1647,20 +1406,11 @@ export function NewPatientPageView({
                 </div>
               )}
 
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => changeStep(1)}
-                  className="h-11 w-full sm:w-auto px-5 rounded-xl font-bold border-slate-300 hover:bg-slate-100 text-sm"
-                >
-                  <ArrowLeft className="mr-2 size-4" /> Anterior: Página 1
-                </Button>
-
+              <div className="flex justify-end pt-3 border-t">
                 <Button
                   type="submit"
                   disabled={saving}
-                  className="h-11 sm:h-12 w-full sm:w-auto px-7 rounded-xl text-sm sm:text-base font-black bg-cyan-700 hover:bg-cyan-800 text-white shadow-lg shadow-cyan-700/20"
+                  className="h-12 w-full sm:w-auto px-8 rounded-xl text-sm sm:text-base font-black bg-cyan-700 hover:bg-cyan-800 text-white shadow-lg shadow-cyan-700/20"
                 >
                   {saving ? (
                     <>
@@ -1675,7 +1425,6 @@ export function NewPatientPageView({
               </div>
             </CardContent>
           </Card>
-        )}
       </form>
     </div>
   );
