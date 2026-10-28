@@ -2,22 +2,17 @@
 
 import { useState, useRef, useEffect } from 'react';
 import {
-  Activity,
-  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   Banknote,
   Check,
   CreditCard,
   FileText,
-  HeartPulse,
   Info,
   LoaderCircle,
   Moon,
   Plus,
   Scale,
-  Sparkles,
-  User,
   UserPlus,
   Users,
   WalletCards,
@@ -63,14 +58,14 @@ export function NewPatientPageView({
   onViewPatients?: () => void;
 }) {
   const today = new Date().toISOString().slice(0, 10);
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2>(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<PatientQrResult | null>(null);
 
   const formTopRef = useRef<HTMLDivElement>(null);
 
-  function changeStep(nextStep: 1 | 2 | 3) {
+  function changeStep(nextStep: 1 | 2) {
     setStep(nextStep);
     try {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -92,15 +87,12 @@ export function NewPatientPageView({
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [dni, setDni] = useState('');
-  const [birthDate, setBirthDate] = useState('');
   const [age, setAge] = useState('');
   const [weightKg, setWeightKg] = useState('');
   const [heightCm, setHeightCm] = useState('');
   const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
   const [occupation, setOccupation] = useState('');
   const [sex, setSex] = useState('female');
-  const [mainComplaint, setMainComplaint] = useState('');
   const [painDurationHours, setPainDurationHours] = useState('');
   const [painLevel, setPainLevel] = useState<number>(5);
   const [generalHealth, setGeneralHealth] = useState('Bueno');
@@ -108,17 +100,6 @@ export function NewPatientPageView({
   const [isPregnant, setIsPregnant] = useState<'No' | 'Sí'>('No');
   const [pregnancyTime, setPregnancyTime] = useState('');
   const [medications, setMedications] = useState('');
-
-  // Evaluacion de Columna (Valores separados I y D de 1 al 5)
-  const [spineInclinationLeft, setSpineInclinationLeft] = useState('1');
-  const [spineInclinationRight, setSpineInclinationRight] = useState('1');
-  const [spineRotationLeft, setSpineRotationLeft] = useState('1');
-  const [spineRotationRight, setSpineRotationRight] = useState('1');
-  const [spineExtension, setSpineExtension] = useState('1');
-  const [iliacLeft, setIliacLeft] = useState('1');
-  const [iliacRight, setIliacRight] = useState('1');
-  const [gaitTiptoes, setGaitTiptoes] = useState('Normal');
-  const [gaitHeels, setGaitHeels] = useState('Normal');
 
   // Pagina 2: Postura y Palpacion
   const [legLengthSide, setLegLengthSide] = useState<'Derecha' | 'Izquierda' | 'Iguales'>('Derecha');
@@ -150,23 +131,6 @@ export function NewPatientPageView({
   const [initialPayment, setInitialPayment] = useState('200');
   const [paymentMethod, setPaymentMethod] = useState('Efectivo');
   const [paymentNotes, setPaymentNotes] = useState('');
-
-  function handleBirthDate(val: string) {
-    setBirthDate(val);
-    if (!val) return;
-    try {
-      const birth = new Date(val);
-      const now = new Date();
-      let calculated = now.getFullYear() - birth.getFullYear();
-      const m = now.getMonth() - birth.getMonth();
-      if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
-        calculated--;
-      }
-      if (calculated >= 0 && calculated <= 120) {
-        setAge(calculated.toString());
-      }
-    } catch {}
-  }
 
   const [showBmiHelp, setShowBmiHelp] = useState(false);
 
@@ -239,27 +203,27 @@ export function NewPatientPageView({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
       dni: dni.trim(),
-      birthDate,
+      birthDate: null,
       age: age ? Number(age) : null,
       weightKg: weightKg ? Number(weightKg) : null,
       heightCm: heightCm ? Number(heightCm) : null,
       phone: phone.trim(),
-      address: address.trim(),
+      address: null,
       occupation: occupation.trim(),
       sex,
-      mainComplaint: mainComplaint.trim(),
+      mainComplaint: null,
       painDurationHours: painDurationHours.trim(),
       painLevel,
       generalHealth,
       sleepHours: sleepHours.trim(),
       pregnancyStatus: isPregnant === 'Sí' ? `Sí - ${pregnancyTime || 'en gestación'}` : 'No',
       medications: medications.trim(),
-      spineInclination: `Izq: ${spineInclinationLeft}/5 • Der: ${spineInclinationRight}/5`,
-      spineRotation: `Izq: ${spineRotationLeft}/5 • Der: ${spineRotationRight}/5`,
-      spineExtension: `Dolor: ${spineExtension}/5`,
-      iliac: `Izq: ${iliacLeft}/5 • Der: ${iliacRight}/5`,
-      gaitTiptoes,
-      gaitHeels,
+      spineInclination: null,
+      spineRotation: null,
+      spineExtension: null,
+      iliac: null,
+      gaitTiptoes: null,
+      gaitHeels: null,
       pronePosition: legLengthSide,
       legLength: legLengthSide,
       sacroiliacPain: `${sacroiliacPain}${sacroiliacPain === 'SI' ? ` (${sacroiliacSide})` : ''}`,
@@ -343,14 +307,11 @@ export function NewPatientPageView({
     setFirstName('');
     setLastName('');
     setDni('');
-    setBirthDate('');
     setAge('');
     setWeightKg('');
     setHeightCm('');
     setPhone('');
-    setAddress('');
     setOccupation('');
-    setMainComplaint('');
     setPainDurationHours('');
     setPainLevel(5);
     setGeneralHealth('Bueno');
@@ -358,15 +319,6 @@ export function NewPatientPageView({
     setIsPregnant('No');
     setPregnancyTime('');
     setMedications('');
-    setSpineInclinationLeft('1');
-    setSpineInclinationRight('1');
-    setSpineRotationLeft('1');
-    setSpineRotationRight('1');
-    setSpineExtension('1');
-    setIliacLeft('1');
-    setIliacRight('1');
-    setGaitTiptoes('Normal');
-    setGaitHeels('Normal');
     setClinicalNotes('');
     setStartToday('SI');
     setTotalSessions('10');
@@ -425,24 +377,6 @@ export function NewPatientPageView({
                   {startToday === 'SI' ? `✓ 1ra sesión iniciada hoy (1 de ${totalSessions || 10})` : 'Inicio agendado'}
                 </span>
               </div>
-              <div className="sm:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-cyan-100/60">
-                <div className="rounded-lg bg-white p-2 border">
-                  <span className="text-[11px] text-slate-400 block font-semibold">Inclinación (I/D)</span>
-                  <span className="font-black text-cyan-900 text-xs">I: {spineInclinationLeft}/5 • D: {spineInclinationRight}/5</span>
-                </div>
-                <div className="rounded-lg bg-white p-2 border">
-                  <span className="text-[11px] text-slate-400 block font-semibold">Rotación (I/D)</span>
-                  <span className="font-black text-cyan-900 text-xs">I: {spineRotationLeft}/5 • D: {spineRotationRight}/5</span>
-                </div>
-                <div className="rounded-lg bg-white p-2 border">
-                  <span className="text-[11px] text-slate-400 block font-semibold">Extensión</span>
-                  <span className="font-black text-cyan-900 text-xs">{spineExtension} / 5</span>
-                </div>
-                <div className="rounded-lg bg-white p-2 border">
-                  <span className="text-[11px] text-slate-400 block font-semibold">Ilíaco (I/D)</span>
-                  <span className="font-black text-cyan-900 text-xs">I: {iliacLeft}/5 • D: {iliacRight}/5</span>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -487,20 +421,19 @@ export function NewPatientPageView({
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
                   <span className="grid size-7 place-items-center rounded-lg bg-cyan-700 text-white text-xs font-black shadow-xs">
-                    1 / 3
+                    1 / 2
                   </span>
                   <div>
                     <CardTitle className="text-base sm:text-lg font-black text-slate-900 leading-tight">
-                      Página 1: Ficha de Anamnesis y Evaluación
+                      Página 1: Ficha de Anamnesis y Evaluación Clínica
                     </CardTitle>
                     <p className="text-xs text-muted-foreground hidden sm:block">
-                      Datos personales, motivo de consulta y evaluación preliminar de columna.
+                      Datos personales, biometría, estado de salud, postura y escaneos segmentarios.
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0" title="Paso 1 de 3">
+                <div className="flex items-center gap-1.5 shrink-0" title="Paso 1 de 2">
                   <span className="h-1.5 w-6 rounded-full bg-cyan-700" />
-                  <span className="h-1.5 w-2 rounded-full bg-slate-200" />
                   <span className="h-1.5 w-2 rounded-full bg-slate-200" />
                 </div>
               </div>
@@ -554,16 +487,6 @@ export function NewPatientPageView({
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="birthDate">F/NACIMIENTO</Label>
-                    <Input
-                      id="birthDate"
-                      type="date"
-                      value={birthDate}
-                      onChange={(e) => handleBirthDate(e.target.value)}
-                      className="h-10 rounded-xl"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
                     <Label htmlFor="age">EDAD</Label>
                     <Input
                       id="age"
@@ -597,17 +520,7 @@ export function NewPatientPageView({
                       className="h-10 rounded-xl"
                     />
                   </div>
-                  <div className="space-y-1.5 sm:col-span-2">
-                    <Label htmlFor="address">DIRECCIÓN</Label>
-                    <Input
-                      id="address"
-                      placeholder="Av. / Calle / Distrito"
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      className="h-10 rounded-xl"
-                    />
-                  </div>
-                  <div className="space-y-1.5 sm:col-span-1">
+                  <div className="space-y-1.5 sm:col-span-2 lg:col-span-2">
                     <Label htmlFor="occupation">PROFESIÓN / OCUPACIÓN</Label>
                     <Input
                       id="occupation"
@@ -774,19 +687,8 @@ export function NewPatientPageView({
 
               <div className="space-y-3">
                 <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-cyan-900">
-                  Queja Principal y Estado de Salud
+                  Estado de Salud
                 </h3>
-
-                <div className="space-y-1.5">
-                  <Label htmlFor="mainComplaint">QUEJA PRINCIPAL (Motivo de consulta)</Label>
-                  <Textarea
-                    id="mainComplaint"
-                    placeholder="Describe los dolores, zonas afectadas, inicio y molestias que siente el paciente..."
-                    value={mainComplaint}
-                    onChange={(e) => setMainComplaint(e.target.value)}
-                    className="min-h-16 rounded-xl"
-                  />
-                </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1.5">
@@ -1051,362 +953,6 @@ export function NewPatientPageView({
                   />
                 </div>
               </div>
-
-              <div className="rounded-xl border border-cyan-100 bg-cyan-50/40 p-3.5 sm:p-4 space-y-3">
-                <div className="flex items-center gap-2">
-                  <HeartPulse className="size-4.5 text-cyan-800" />
-                  <h3 className="font-extrabold text-xs sm:text-sm text-cyan-950 uppercase tracking-wide">
-                    EVALUACIÓN DE LA COLUMNA VERTEBRAL
-                  </h3>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {/* 1. INCLINACIÓN */}
-                  <div className="space-y-2 rounded-xl bg-white p-3 border shadow-xs">
-                    <div className="flex items-center justify-between">
-                      <Label className="font-bold text-xs uppercase tracking-wider text-slate-800">
-                        INCLINACIÓN
-                      </Label>
-                      <span className="text-[11px] font-semibold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200">
-                        Escala 1 al 5
-                      </span>
-                    </div>
-
-                    {/* Izquierda */}
-                    <div className="rounded-lg bg-slate-50 p-2 border">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">I</span>
-                          Izquierda:
-                        </span>
-                        <span className="text-xs font-black text-cyan-900">
-                          Dolor: {spineInclinationLeft} / 5
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-5 gap-1.5">
-                        {['1', '2', '3', '4', '5'].map((lvl) => (
-                          <button
-                            key={lvl}
-                            type="button"
-                            onClick={() => setSpineInclinationLeft(lvl)}
-                            className={cn(
-                              'h-8.5 rounded-lg text-xs font-black transition border',
-                              spineInclinationLeft === lvl
-                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-xs ring-1 ring-cyan-400/40'
-                                : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
-                            )}
-                          >
-                            {lvl}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Derecha */}
-                    <div className="rounded-lg bg-slate-50 p-2 border">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">D</span>
-                          Derecha:
-                        </span>
-                        <span className="text-xs font-black text-cyan-900">
-                          Dolor: {spineInclinationRight} / 5
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-5 gap-1.5">
-                        {['1', '2', '3', '4', '5'].map((lvl) => (
-                          <button
-                            key={lvl}
-                            type="button"
-                            onClick={() => setSpineInclinationRight(lvl)}
-                            className={cn(
-                              'h-8.5 rounded-lg text-xs font-black transition border',
-                              spineInclinationRight === lvl
-                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-xs ring-1 ring-cyan-400/40'
-                                : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
-                            )}
-                          >
-                            {lvl}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 2. ROTACIÓN */}
-                  <div className="space-y-2 rounded-xl bg-white p-3 border shadow-xs">
-                    <div className="flex items-center justify-between">
-                      <Label className="font-bold text-xs uppercase tracking-wider text-slate-800">
-                        ROTACIÓN
-                      </Label>
-                      <span className="text-[11px] font-semibold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200">
-                        Escala 1 al 5
-                      </span>
-                    </div>
-
-                    {/* Izquierda */}
-                    <div className="rounded-lg bg-slate-50 p-2 border">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">I</span>
-                          Izquierda:
-                        </span>
-                        <span className="text-xs font-black text-cyan-900">
-                          Dolor: {spineRotationLeft} / 5
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-5 gap-1.5">
-                        {['1', '2', '3', '4', '5'].map((lvl) => (
-                          <button
-                            key={lvl}
-                            type="button"
-                            onClick={() => setSpineRotationLeft(lvl)}
-                            className={cn(
-                              'h-8.5 rounded-lg text-xs font-black transition border',
-                              spineRotationLeft === lvl
-                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-xs ring-1 ring-cyan-400/40'
-                                : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
-                            )}
-                          >
-                            {lvl}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Derecha */}
-                    <div className="rounded-lg bg-slate-50 p-2 border">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">D</span>
-                          Derecha:
-                        </span>
-                        <span className="text-xs font-black text-cyan-900">
-                          Dolor: {spineRotationRight} / 5
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-5 gap-1.5">
-                        {['1', '2', '3', '4', '5'].map((lvl) => (
-                          <button
-                            key={lvl}
-                            type="button"
-                            onClick={() => setSpineRotationRight(lvl)}
-                            className={cn(
-                              'h-8.5 rounded-lg text-xs font-black transition border',
-                              spineRotationRight === lvl
-                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-xs ring-1 ring-cyan-400/40'
-                                : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
-                            )}
-                          >
-                            {lvl}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 3. EXTENSIÓN */}
-                  <div className="space-y-2 rounded-xl bg-white p-3 border shadow-xs">
-                    <div className="flex items-center justify-between">
-                      <Label className="font-bold text-xs uppercase tracking-wider text-slate-800">
-                        EXTENSIÓN
-                      </Label>
-                      <span className="text-xs font-black text-cyan-900">
-                        Dolor: {spineExtension} / 5
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 font-medium">
-                      Nivel de molestia al realizar extensión posterior
-                    </p>
-                    <div className="grid grid-cols-5 gap-1.5 pt-0.5">
-                      {['1', '2', '3', '4', '5'].map((lvl) => (
-                        <button
-                          key={lvl}
-                          type="button"
-                          onClick={() => setSpineExtension(lvl)}
-                          className={cn(
-                            'h-8.5 rounded-lg text-xs font-black transition border',
-                            spineExtension === lvl
-                              ? 'bg-slate-900 text-white border-slate-900 shadow-xs ring-1 ring-slate-400/40'
-                              : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
-                          )}
-                        >
-                          {lvl}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="flex justify-between text-[11px] text-slate-400 font-medium px-0.5">
-                      <span>1: Sin dolor</span>
-                      <span>5: Severo</span>
-                    </div>
-                  </div>
-
-                  {/* 4. ILÍACO */}
-                  <div className="space-y-2 rounded-xl bg-white p-3 border shadow-xs">
-                    <div className="flex items-center justify-between">
-                      <Label className="font-bold text-xs uppercase tracking-wider text-slate-800">
-                        ILÍACO
-                      </Label>
-                      <span className="text-[11px] font-semibold text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200">
-                        Escala 1 al 5
-                      </span>
-                    </div>
-
-                    {/* Izquierdo */}
-                    <div className="rounded-lg bg-slate-50 p-2 border">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">I</span>
-                          Izquierdo:
-                        </span>
-                        <span className="text-xs font-black text-cyan-900">
-                          Dolor: {iliacLeft} / 5
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-5 gap-1.5">
-                        {['1', '2', '3', '4', '5'].map((lvl) => (
-                          <button
-                            key={lvl}
-                            type="button"
-                            onClick={() => setIliacLeft(lvl)}
-                            className={cn(
-                              'h-8.5 rounded-lg text-xs font-black transition border',
-                              iliacLeft === lvl
-                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-xs ring-1 ring-cyan-400/40'
-                                : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
-                            )}
-                          >
-                            {lvl}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Derecho */}
-                    <div className="rounded-lg bg-slate-50 p-2 border">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                          <span className="size-5 rounded-full bg-cyan-100 text-cyan-800 grid place-items-center text-[11px] font-black">D</span>
-                          Derecho:
-                        </span>
-                        <span className="text-xs font-black text-cyan-900">
-                          Dolor: {iliacRight} / 5
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-5 gap-1.5">
-                        {['1', '2', '3', '4', '5'].map((lvl) => (
-                          <button
-                            key={lvl}
-                            type="button"
-                            onClick={() => setIliacRight(lvl)}
-                            className={cn(
-                              'h-8.5 rounded-lg text-xs font-black transition border',
-                              iliacRight === lvl
-                                ? 'bg-cyan-700 text-white border-cyan-800 shadow-xs ring-1 ring-cyan-400/40'
-                                : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
-                            )}
-                          >
-                            {lvl}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5 rounded-xl bg-white p-3 border">
-                    <Label className="font-bold text-xs uppercase tracking-wider text-slate-800">
-                      MARCHA CON PIE PUNTAS
-                    </Label>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {['Normal', 'Dificultad', 'Dolor', 'No puede'].map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setGaitTiptoes(opt)}
-                          className={cn(
-                            'h-8.5 rounded-lg text-xs font-bold border transition',
-                            gaitTiptoes === opt ? 'bg-slate-900 text-white border-slate-900' : 'bg-white hover:bg-slate-50 text-slate-800'
-                          )}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5 rounded-xl bg-white p-3 border">
-                    <Label className="font-bold text-xs uppercase tracking-wider text-slate-800">
-                      MARCHA CON PIE TALONES
-                    </Label>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      {['Normal', 'Dificultad', 'Dolor', 'No puede'].map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          onClick={() => setGaitHeels(opt)}
-                          className={cn(
-                            'h-8.5 rounded-lg text-xs font-bold border transition',
-                            gaitHeels === opt ? 'bg-slate-900 text-white border-slate-900' : 'bg-white hover:bg-slate-50 text-slate-800'
-                          )}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {error && (
-                <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm font-medium text-red-800">
-                  {error}
-                </div>
-              )}
-
-              <div className="flex justify-end pt-2">
-                <Button
-                  type="button"
-                  onClick={() => {
-                    if (!firstName.trim() || !lastName.trim()) {
-                      setError('Por favor ingresa los nombres y apellidos antes de continuar.');
-                      return;
-                    }
-                    setError('');
-                    changeStep(2);
-                  }}
-                  className="h-12 px-7 rounded-xl font-bold bg-cyan-700 hover:bg-cyan-800 text-white shadow-md"
-                >
-                  Continuar a Página 2: Postura y Palpación <ArrowRight className="ml-2 size-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}        {/* ==================== PÁGINA 2 ==================== */}
-        {step === 2 && (
-          <Card className="rounded-2xl border-0 shadow-sm bg-white overflow-hidden">
-            <CardHeader className="py-3 px-4 sm:px-6 border-b bg-slate-50/50">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2.5">
-                  <span className="grid size-7 place-items-center rounded-lg bg-cyan-700 text-white text-xs font-black shadow-xs">
-                    2 / 3
-                  </span>
-                  <div>
-                    <CardTitle className="text-base sm:text-lg font-black text-slate-900 leading-tight">
-                      Página 2: Evaluación Postural y Palpación
-                    </CardTitle>
-                    <p className="text-xs text-muted-foreground hidden sm:block">
-                      Posición prono, largo de piernas, palpación estática y dinámica, escaneos lumbar y torácico.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 shrink-0" title="Paso 2 de 3">
-                  <span className="h-1.5 w-2 rounded-full bg-slate-200" />
-                  <span className="h-1.5 w-6 rounded-full bg-cyan-700" />
-                  <span className="h-1.5 w-2 rounded-full bg-slate-200" />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-5 space-y-3.5">
               <div className="rounded-xl border border-slate-200 bg-slate-50/40 p-3.5 space-y-3">
                 <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-cyan-900">
                   Evaluación Postural y Miembros Inferiores
@@ -1646,47 +1192,51 @@ export function NewPatientPageView({
                 </div>
               </div>
 
-              <div className="flex justify-between pt-2 border-t mt-3">
+              {error && (
+                <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-sm font-medium text-red-800">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex justify-end pt-3 border-t mt-4">
                 <Button
                   type="button"
-                  variant="outline"
-                  onClick={() => changeStep(1)}
-                  className="h-10 px-5 rounded-xl font-bold border-slate-300 hover:bg-slate-100 text-sm"
+                  onClick={() => {
+                    if (!firstName.trim() || !lastName.trim()) {
+                      setError('Por favor ingresa los nombres y apellidos antes de continuar.');
+                      return;
+                    }
+                    setError('');
+                    changeStep(2);
+                  }}
+                  className="h-12 px-7 rounded-xl font-bold bg-cyan-700 hover:bg-cyan-800 text-white shadow-md text-sm sm:text-base"
                 >
-                  <ArrowLeft className="mr-2 size-4" /> Anterior: Página 1
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => changeStep(3)}
-                  className="h-10 px-6 rounded-xl font-bold bg-cyan-700 hover:bg-cyan-800 text-white shadow-md text-sm"
-                >
-                  Continuar a Página 3: Cervical, Plan y Pago <ArrowRight className="ml-2 size-4" />
+                  Continuar a Página 2: Plan y Pago <ArrowRight className="ml-2 size-4" />
                 </Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* ==================== PÁGINA 3 ==================== */}
-        {step === 3 && (
+        {/* ==================== PÁGINA 2 ==================== */}
+        {step === 2 && (
           <Card className="rounded-2xl border-0 shadow-sm bg-white overflow-hidden">
             <CardHeader className="py-3 px-4 sm:px-6 border-b bg-slate-50/50">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
                   <span className="grid size-7 place-items-center rounded-lg bg-cyan-700 text-white text-xs font-black shadow-xs">
-                    3 / 3
+                    2 / 2
                   </span>
                   <div>
                     <CardTitle className="text-base sm:text-lg font-black text-slate-900 leading-tight">
-                      Página 3: Evaluación Cervical, Plan de Tratamiento y Pago
+                      Página 2: Evaluación Cervical, Plan de Tratamiento y Pago
                     </CardTitle>
                     <p className="text-xs text-muted-foreground hidden sm:block">
                       Ajuste cervical, serie listada, plan de sesiones y cobro de abono inicial.
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0" title="Paso 3 de 3">
-                  <span className="h-1.5 w-2 rounded-full bg-slate-200" />
+                <div className="flex items-center gap-1.5 shrink-0" title="Paso 2 de 2">
                   <span className="h-1.5 w-2 rounded-full bg-slate-200" />
                   <span className="h-1.5 w-6 rounded-full bg-cyan-700" />
                 </div>
@@ -2101,10 +1651,10 @@ export function NewPatientPageView({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => changeStep(2)}
+                  onClick={() => changeStep(1)}
                   className="h-11 w-full sm:w-auto px-5 rounded-xl font-bold border-slate-300 hover:bg-slate-100 text-sm"
                 >
-                  <ArrowLeft className="mr-2 size-4" /> Anterior: Página 2
+                  <ArrowLeft className="mr-2 size-4" /> Anterior: Página 1
                 </Button>
 
                 <Button
