@@ -81,18 +81,7 @@ export function NewPatientPageView({
   const [pregnancyTime, setPregnancyTime] = useState('');
   const [medications, setMedications] = useState('');
 
-  // Escaneos y Ajustes
-  const [lumbarScan, setLumbarScan] = useState('');
-  const [lumbarHypomobility, setLumbarHypomobility] = useState('');
-  const [lumbarYesNo, setLumbarYesNo] = useState<'SI' | 'NO'>('NO');
-  const [thoracicScan, setThoracicScan] = useState('');
-  const [thoracicHypomobility, setThoracicHypomobility] = useState('');
-  const [thoracicListingLevel, setThoracicListingLevel] = useState('');
-
-  // Pagina 3: Cervical, Citas y Pagos
-  const [cervicalC2C7Rotation, setCervicalC2C7Rotation] = useState('C2 Rotación D / C7 Rotación I');
-  const [cervicalListingLevel, setCervicalListingLevel] = useState('C2');
-  const [cervicalSeries, setCervicalSeries] = useState('Serie 1 al 7');
+  // Diagnóstico final y comentarios clínicos
   const [clinicalNotes, setClinicalNotes] = useState('');
   const [totalSessions, setTotalSessions] = useState('10');
   const [sessionsPerWeek, setSessionsPerWeek] = useState('2');
@@ -159,7 +148,7 @@ export function NewPatientPageView({
   const initialPaymentNum = parseFloat(initialPayment) || 0;
   const pendingBalanceNum = Math.max(0, totalAmountNum - initialPaymentNum);
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!firstName.trim() || !lastName.trim()) {
       setError('Por favor ingresa al menos los nombres y apellidos del paciente.');
@@ -204,15 +193,15 @@ export function NewPatientPageView({
       strongerLeg: null,
       staticPalpation: null,
       muscleTension: null,
-      lumbarScan: lumbarScan.trim(),
-      lumbarHypomobility: lumbarHypomobility.trim(),
-      lumbarYesNo,
-      thoracicScan: thoracicScan.trim(),
-      thoracicHypomobility: thoracicHypomobility.trim(),
-      thoracicListingLevel: thoracicListingLevel.trim(),
-      cervicalC2C7Rotation: cervicalC2C7Rotation.trim(),
-      cervicalListingLevel: cervicalListingLevel.trim(),
-      cervicalSeries: cervicalSeries.trim(),
+      lumbarScan: null,
+      lumbarHypomobility: null,
+      lumbarYesNo: null,
+      thoracicScan: null,
+      thoracicHypomobility: null,
+      thoracicListingLevel: null,
+      cervicalC2C7Rotation: null,
+      cervicalListingLevel: null,
+      cervicalSeries: null,
       clinicalNotes: clinicalNotes.trim(),
       totalSessions: Number(totalSessions) || 10,
       sessionsPerWeek: Number(sessionsPerWeek) || 2,
@@ -464,7 +453,7 @@ export function NewPatientPageView({
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="sex">SEXO</Label>
-                    <Select value={sex} onValueChange={setSex}>
+                    <Select value={sex} onValueChange={(val) => setSex(val ?? 'female')}>
                       <SelectTrigger id="sex" className="h-10 rounded-xl">
                         <SelectValue placeholder="Seleccionar" />
                       </SelectTrigger>
@@ -919,148 +908,28 @@ export function NewPatientPageView({
                 </div>
               </div>
 
-              <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-3">
-                <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-slate-900">
-                  Escaneos Segmentarios
-                </h3>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-2 rounded-xl bg-cyan-50/40 p-3 border border-cyan-100">
-                    <h4 className="font-extrabold text-xs text-cyan-950 uppercase">LUMBAR ESCANEO</h4>
-                    <div className="space-y-1">
-                      <Label htmlFor="lumbHypo" className="text-xs">HIPOMOVILIDAD</Label>
-                      <Input
-                        id="lumbHypo"
-                        placeholder="Niveles con hipomovilidad (ej. L4-L5, L5-S1)"
-                        value={lumbarHypomobility}
-                        onChange={(e) => setLumbarHypomobility(e.target.value)}
-                        className="h-9 rounded-lg bg-white"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">SÍ O NO</Label>
-                      <div className="flex gap-1.5">
-                        {['SI', 'NO'].map((opt) => (
-                          <button
-                            key={opt}
-                            type="button"
-                            onClick={() => setLumbarYesNo(opt as 'SI' | 'NO')}
-                            className={cn(
-                              'h-8.5 flex-1 rounded-lg text-xs font-black border transition',
-                              lumbarYesNo === opt ? 'bg-slate-900 text-white border-slate-900' : 'bg-white hover:bg-slate-50 text-slate-800'
-                            )}
-                          >
-                            {opt}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="lumbScanNotes" className="text-xs">Notas Lumbar</Label>
-                      <Input
-                        id="lumbScanNotes"
-                        placeholder="Detalles adicionales del escaneo lumbar"
-                        value={lumbarScan}
-                        onChange={(e) => setLumbarScan(e.target.value)}
-                        className="h-9 rounded-lg bg-white"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 rounded-xl bg-cyan-50/40 p-3 border border-cyan-100">
-                    <h4 className="font-extrabold text-xs text-cyan-950 uppercase">TORÁCICO ESCANEO</h4>
-                    <div className="space-y-1">
-                      <Label htmlFor="thorHypo" className="text-xs">HIPOMOVILIDAD</Label>
-                      <Input
-                        id="thorHypo"
-                        placeholder="Niveles torácicos con hipomovilidad (ej. T3-T6)"
-                        value={thoracicHypomobility}
-                        onChange={(e) => setThoracicHypomobility(e.target.value)}
-                        className="h-9 rounded-lg bg-white"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="thorList" className="text-xs">NIVEL LISTADO</Label>
-                      <Input
-                        id="thorList"
-                        placeholder="Listado quiropráctico torácico (ej. T4 PL, T6 PR)"
-                        value={thoracicListingLevel}
-                        onChange={(e) => setThoracicListingLevel(e.target.value)}
-                        className="h-9 rounded-lg bg-white"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="thorScanNotes" className="text-xs">Notas Torácico</Label>
-                      <Input
-                        id="thorScanNotes"
-                        placeholder="Detalles adicionales del escaneo torácico"
-                        value={thoracicScan}
-                        onChange={(e) => setThoracicScan(e.target.value)}
-                        className="h-9 rounded-lg bg-white"
-                      />
-                    </div>
+              <div className="rounded-xl border border-cyan-200/90 bg-cyan-50/40 p-4 sm:p-5 space-y-3.5 shadow-xs">
+                <div className="flex items-center gap-3">
+                  <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-cyan-800 text-white shadow-xs">
+                    <FileText className="size-5" />
+                  </span>
+                  <div>
+                    <Label htmlFor="clinNotes" className="font-black text-sm sm:text-base text-cyan-950 uppercase tracking-wide cursor-pointer">
+                      DIAGNÓSTICO FINAL Y COMENTARIO
+                    </Label>
+                    <p className="text-xs text-slate-600 font-medium">
+                      Escriba aquí todo lo referente al paciente: diagnóstico quiropráctico final, hallazgos, antecedentes y comentarios del operador.
+                    </p>
                   </div>
                 </div>
-              </div>
-
-              <div className="rounded-xl border border-cyan-100 bg-cyan-50/40 p-3.5 space-y-3">
-                <h3 className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-cyan-950">
-                  Evaluación Cervical
-                </h3>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-1.5 sm:col-span-2">
-                    <Label htmlFor="cervRot">CERVICAL: C2 y C7 Rotación</Label>
-                    <Input
-                      id="cervRot"
-                      placeholder="Ej. C2 Rotación Derecha, C7 Rotación Izquierda con fijación"
-                      value={cervicalC2C7Rotation}
-                      onChange={(e) => setCervicalC2C7Rotation(e.target.value)}
-                      className="h-10 rounded-xl bg-white"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="cervListing">NIVEL LISTADO (C1 al C7)</Label>
-                    <Select value={cervicalListingLevel} onValueChange={setCervicalListingLevel}>
-                      <SelectTrigger id="cervListing" className="h-10 rounded-xl bg-white">
-                        <SelectValue placeholder="Seleccionar nivel" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {['Atlas (C1)', 'Axis (C2)', 'C3', 'C4', 'C5', 'C6', 'C7'].map((c) => (
-                          <SelectItem key={c} value={c}>
-                            {c}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="cervSeries">SERIE: 1 al 7</Label>
-                    <Select value={cervicalSeries} onValueChange={setCervicalSeries}>
-                      <SelectTrigger id="cervSeries" className="h-10 rounded-xl bg-white">
-                        <SelectValue placeholder="Seleccionar serie" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {['Serie 1', 'Serie 2', 'Serie 3', 'Serie 4', 'Serie 5', 'Serie 6', 'Serie 7', 'Serie 1 al 7'].map((s) => (
-                          <SelectItem key={s} value={s}>
-                            {s}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-1.5 sm:col-span-2">
-                    <Label htmlFor="clinNotes">INDICACIONES Y NOTAS CLÍNICAS</Label>
-                    <Textarea
-                      id="clinNotes"
-                      placeholder="Recomendaciones quiroprácticas, técnicas de ajuste (Gonstead, Thompson, Diversified), post-atención..."
-                      value={clinicalNotes}
-                      onChange={(e) => setClinicalNotes(e.target.value)}
-                      className="min-h-16 rounded-xl bg-white"
-                    />
-                  </div>
-                </div>
+                <Textarea
+                  id="clinNotes"
+                  rows={6}
+                  placeholder="Escriba aquí el diagnóstico final completo, observaciones clínicas, ajustes quiroprácticos realizados y cualquier comentario o indicación para el paciente..."
+                  value={clinicalNotes}
+                  onChange={(e) => setClinicalNotes(e.target.value)}
+                  className="min-h-36 rounded-xl bg-white border-cyan-200 focus-visible:ring-cyan-500 text-sm leading-relaxed"
+                />
               </div>
 
               <div className="rounded-xl border border-emerald-200/80 bg-emerald-50/30 p-3.5 space-y-3.5">
@@ -1290,7 +1159,7 @@ export function NewPatientPageView({
                       <Label htmlFor="payMethod" className="font-bold text-xs text-slate-800">
                         FORMA DE PAGO DEL ABONO
                       </Label>
-                      <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                      <Select value={paymentMethod} onValueChange={(val) => setPaymentMethod(val ?? 'Efectivo')}>
                         <SelectTrigger id="payMethod" className="h-10 rounded-xl bg-white font-medium">
                           <SelectValue placeholder="Forma de pago" />
                         </SelectTrigger>
